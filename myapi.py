@@ -1,7 +1,10 @@
 from flask import Flask, url_for, request, jsonify
 import methods
 import json
+import os
 app = Flask(__name__)
+
+port = int(os.getenv('VCAP_APP_PORT', 8080))
 
 with open('config.json') as data_file:    
     data = json.load(data_file)
@@ -34,5 +37,4 @@ def get_vm(uuid):
     return jsonify(methods.find_vm_by_uuid(uuid,host,user,pwd))
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=port)

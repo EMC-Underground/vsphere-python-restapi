@@ -4,7 +4,12 @@ import json
 from pyVim import connect
 from pyVmomi import vmodl
 vm_json_return=[]
+import requests
+import ssl
 
+requests.packages.urllib3.disable_warnings()
+default_context = ssl._create_default_https_context
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def hello():
     return "Why hello! I'm from another file!"

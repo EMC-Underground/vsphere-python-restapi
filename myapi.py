@@ -1,13 +1,14 @@
 from flask import Flask, url_for, request, jsonify
 import methods
-import tools.cli as cli
+import json
 app = Flask(__name__)
 
-args = cli.get_args()
-host=args.host
-user=args.user
-pwd=args.password
-port=int(args.port)
+with open('config.json') as data_file:    
+    data = json.load(data_file)
+
+host=data["host"]
+user=data["username"]
+pwd=data["password"]
 
 @app.route('/')
 def index():
@@ -17,20 +18,20 @@ def index():
 def hello():
     return methods.hello()
 
-@app.route('/checking')
-def checking():
-    return 'checking'
+@app.route('/debug/')
+def debug():
+    return jsonify(methods.debuger(host,user,pwd))
 
-@app.route('/vms', methods=['GET', 'POST'])
+@app.route('/vms/', methods=['GET', 'POST'])
 def get_vms():
     if request.method == 'POST':
         return 'your vms'
     else:
-        return methods.get_all_vm_info(host,user,pwd)
+        return jsonify(vms = methods.get_all_vm_info(host,user,pwd))
 
-@app.route('/vms/<uuid>')
+@app.route('/vms/<uuid>/')
 def get_vm(uuid):
-    return methods.find_vm_by_uuid(uuid,host,user,pwd)
+    return jsonify(methods.find_vm_by_uuid(uuid,host,user,pwd))
 
 if __name__ == '__main__':
     app.debug = True

@@ -1,5 +1,6 @@
 import atexit
 import json
+import os
 
 from pyVim import connect
 from pyVmomi import vmodl
@@ -8,8 +9,10 @@ import requests
 import ssl
 
 requests.packages.urllib3.disable_warnings()
-default_context = ssl._create_default_https_context
-ssl._create_default_https_context = ssl._create_unverified_context
+
+if os.getenv("VCAP_APP_PORT"):
+    ssl._create_default_httpsi_context = ssl._create_unverified_context
+    default_context = ssl._create_default_https_context
 
 def hello():
     return "Why hello! I'm from another file!"
@@ -124,3 +127,50 @@ def find_vm_by_uuid(uuid,host,user,pwd):
     fullData.update(host = hostDetails)
     print a.quickStats
     return fullData
+
+def server_connection(host, user, pwd):
+    SI = None
+    # Attempt to connect to the VCSA
+    try:
+        SI = connect.SmartConnect(host=host,user=uesr,pwd=pwd)
+	atexit.register(connect.Disconnect, SI)
+    except IOError, ex:
+        pass
+
+    if not SI:
+        # TODO: change so that it throws an error but doesn't exit
+        raise SystemExit("Unable to connect to host with supplied info.")
+
+    return SI
+
+def delte_vm_from_server(host, user, pwd, uuid):
+    #Get Server connection
+    SI = server_connection(host,user,pwd)
+
+    #Find the vm to delete
+    VM = SI.content.searchIndex.FindByUuid(None, uuid, True, False)
+
+    #Verify we have a vm
+    if VM is None:
+        return "Unable to locate VM with UUID of "+uuid
+
+    # Ensure VM is powered off
+    if format(VM.runtime.powerState) == "poweredOn":
+        TASK = VM.PowerOffVM_Task()
+	# TODO: verify that this does not cause a full app wait
+	tasks.wait_for_tasks(SI, [TASK])
+    
+    #Destroy vm
+    TASK = VM.Destroy_Task()
+    tasks.wait_for_tasks(SI, [TASK])
+    
+    return "VM is destroyed"
+
+def change_vm_stats(host, user, pwd, uuid)
+    #Get server object
+    SI = server_connection(host,user,pwd)
+
+    #Find the vm to change
+    VM = SI.content.searchIndex.FindByUuid(None, uuid, True, False)
+
+    return "Function still in progress"

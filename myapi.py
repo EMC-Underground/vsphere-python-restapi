@@ -32,9 +32,16 @@ def get_vms():
     else:
         return jsonify(vms = methods.get_all_vm_info(host,user,pwd))
 
-@app.route('/vms/<uuid>/')
+@app.route('/vms/<uuid>/', methods=['GET', 'PUT', 'DELETE'])
 def get_vm(uuid):
-    return jsonify(methods.find_vm_by_uuid(uuid,host,user,pwd))
+    if request.method == 'DELETE':
+        return delte_vm_from_server(host,user,pwd,uuid)
+    elif request.method == 'PUT':
+        return change_vm_stats(host,user,pwd,uuid)
+    else:
+        return jsonify(methods.find_vm_by_uuid(uuid,host,user,pwd))
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port)

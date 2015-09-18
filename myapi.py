@@ -4,14 +4,16 @@ import json
 import os
 app = Flask(__name__)
 
+app.debug = True
+
 port = int(os.getenv('VCAP_APP_PORT', 8080))
 
-with open('config.json') as data_file:    
-    data = json.load(data_file)
-
-host=data["host"]
-user=data["username"]
-pwd=data["password"]
+#with open('config.json') as data_file:    
+#    data = json.load(data_file)
+#
+#host=data["host"]
+#user=data["username"]
+#pwd=data["password"]
 
 @app.route('/')
 def index():
@@ -23,23 +25,25 @@ def hello():
 
 @app.route('/debug/')
 def debug():
-    return jsonify(methods.debuger(host,user,pwd))
+    return jsonify(methods.debuger())
 
 @app.route('/vms/', methods=['GET', 'POST'])
 def get_vms():
     if request.method == 'POST':
-        return 'your vms'
+        specs = request.get_json()
+	vm = methods.create_new_vm(specs)
+	return jsonify(vm)
     else:
-        return jsonify(vms = methods.get_all_vm_info(host,user,pwd))
+        return jsonify(vms = methods.get_all_vm_info())
 
 @app.route('/vms/<uuid>/', methods=['GET', 'PUT', 'DELETE'])
 def get_vm(uuid):
     if request.method == 'DELETE':
-        return delte_vm_from_server(host,user,pwd,uuid)
+        return methods.delete_vm_from_server(uuid)
     elif request.method == 'PUT':
-        return change_vm_stats(host,user,pwd,uuid)
+        return methods.change_vm_stats(uuid)
     else:
-        return jsonify(methods.find_vm_by_uuid(uuid,host,user,pwd))
+        return jsonify(methods.find_vm_by_uuid(uuid))
 
 
 

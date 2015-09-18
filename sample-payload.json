@@ -1,0 +1,8 @@
+{
+  "datastore":"scaleio_vmw",
+  "mem":"512",
+  "cpus":"1",
+  "name":"API_Test_VM",
+  "guestid":"ubuntu64Guest",
+  "vm_version":"vmx-10"
+}

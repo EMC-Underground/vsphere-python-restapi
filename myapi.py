@@ -17,31 +17,27 @@ port = int(os.getenv('VCAP_APP_PORT', 8080))
 
 @app.route('/')
 def index():
-    return 'Index Page'
+    return 'Welcome to the VMware REST API!'
 
-@app.route('/hello')
-def hello():
-    return methods.hello()
-
-@app.route('/debug/')
+@app.route('/debug')
 def debug():
-    return jsonify(methods.debuger())
+    return methods.debugger()
 
 @app.route('/vms/', methods=['GET', 'POST'])
 def get_vms():
     if request.method == 'POST':
         specs = request.get_json()
-	vm = methods.create_new_vm(specs)
-	return jsonify(vm)
+	return jsonify(vm = methods.create_new_vm(specs))
     else:
-        return jsonify(vms = methods.get_all_vm_info())
+        return jsonify(vm = methods.get_all_vm_info())
 
 @app.route('/vms/<uuid>/', methods=['GET', 'PUT', 'DELETE'])
 def get_vm(uuid):
     if request.method == 'DELETE':
         return methods.delete_vm_from_server(uuid)
     elif request.method == 'PUT':
-        return methods.change_vm_stats(uuid)
+        specs = request.get_json()
+        return methods.change_vm_stats(uuid,specs)
     else:
         return jsonify(methods.find_vm_by_uuid(uuid))
 

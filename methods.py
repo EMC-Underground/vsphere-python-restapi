@@ -7,7 +7,6 @@ from pyVmomi import vmodl
 from pyVmomi import vim
 from tools import tasks
 
-vm_json_return=[]
 import requests
 import ssl
 
@@ -21,11 +20,12 @@ pwd=data["password"]
 requests.packages.urllib3.disable_warnings()
 
 if os.getenv("VCAP_APP_PORT"):
-    ssl._create_default_httpsi_context = ssl._create_unverified_context
+    print "you are running in CF"
     default_context = ssl._create_default_https_context
+    ssl._create_default_https_context = ssl._create_unverified_context
 
-def hello():
-    return "Why hello! I'm from another file!"
+def debugger():
+    return os.getenv("VCAP_APP_PORT")
 
 def server_connection():
     SI = None
@@ -33,7 +33,7 @@ def server_connection():
     print user
     # Attempt to connect to the VCSA
     try:
-        SI = connect.SmartConnect(host=host,user=user,pwd=pwd)
+        SI = connect.SmartConnect(host=host,user=user,pwd=pwd,)
         atexit.register(connect.Disconnect, SI)
     except IOError, ex:
         pass
@@ -44,35 +44,11 @@ def server_connection():
 
     return SI 
 
-"""
-Python program for listing the vms on an ESX / vCenter host
-"""
-def debuger():
-    try:
-        service_instance = server_connection()
-        content = service_instance.RetrieveContent()
-        print "I got things..."
-        a = content.rootFolder.childEntity[0].vmFolder.childEntity[1].childEntity[0].summary
-	del vars(a.config)['product']
-	fullData = vars(a.config)
-	fullData.update(guest = vars(a.guest))
-	fullData.update(storage = vars(a.storage))
-	b = vars(a.runtime.host.summary.config.product)
-	del vars(a.runtime.host.summary.config)['product']
-	hostDetails = vars(a.runtime.host.summary.config)
-        hostDetails.update(product = b)
-        del hostDetails['featureVersion']
-	fullData.update(host = hostDetails)
-        return fullData
-    except:
-        return "I did not get things"
-
-def print_vm_info(virtual_machine, depth=1):
+def print_vm_info(virtual_machine, depth=1,full_vm_list=None):
     """
     Print information for a particular virtual machine or recurse into a
     folder with depth protection
     """
-    global vm_json_return
     maxdepth = 20
     vm_json = {}
     # if this is a group it will have children. if it does, recurse into them
@@ -82,20 +58,20 @@ def print_vm_info(virtual_machine, depth=1):
             return
         vmList = virtual_machine.childEntity
         for c in vmList:
-            print_vm_info(c, depth + 1)
+            print_vm_info(c, depth + 1,full_vm_list)
         return
     if hasattr(virtual_machine, 'vAppConfig'):
         if depth > maxdepth:
             return
         vmList = virtual_machine.childLink
         for c in vmList:
-            print_vm_info(c, depth + 1)
+            print_vm_info(c, depth + 1,full_vm_list)
         return
 
     summary = virtual_machine.summary
     if hasattr(summary.config, 'product'):
         del vars(summary.config)['product']
-    vm_json_return.append(vars(summary.config))
+    full_vm_list.append(vars(summary.config))
     return
 
 def get_all_vm_info():
@@ -103,17 +79,18 @@ def get_all_vm_info():
         service_instance = server_connection()
         if service_instance is None:
 	    print "Couldn't get the server instance"
-
+        full_vm_list=[]
         content = service_instance.RetrieveContent()
+	#vm_json_return = []
 	for child in content.rootFolder.childEntity:
 	    if hasattr(child, 'vmFolder'):
                 datacenter = child
                 vmFolder = datacenter.vmFolder
 		vmList = vmFolder.childEntity
 		for vm in vmList:
-		    print_vm_info(vm)
+		    print_vm_info(vm,1,full_vm_list)
 
-            return vm_json_return
+            return full_vm_list
 
     except vmodl.MethodFault as error:
         print "Caught vmodl fault : " + error.msg
@@ -176,14 +153,22 @@ def delete_vm_from_server(uuid):
     
     return "VM is destroyed"
 
-def change_vm_stats(uuid):
+def change_vm_stats(uuid,specs):
     #Get server object
     SI = server_connection()
 
     #Find the vm to change
-    VM = SI.content.searchIndex.FindByUuid(None, uuid, True, False)
+    VM = SI.content.searchIndex.FindByUuid(None, uuid, True, True)
 
-    return "Function still in progress"
+    if 'cpu' in specs:
+        task = VM.ReconfigVM(vim.vm.ConfigSpec(numCPUs=int(specs['cpu'])))
+	tasks.wait_for_tasks(SI, [task])
+    
+    if 'mem' in specs:
+        task = VM.ReconfigVM(vim.vm.ConfigSpec(memoryMB=long(specs['mem'])))
+	tasks.wait_for_tasks(SI, [task])
+
+    return "I fixed it!"
 
 def create_new_vm(specs):
     """Creates a dummy VirtualMachine with 1 vCpu, 128MB of RAM.

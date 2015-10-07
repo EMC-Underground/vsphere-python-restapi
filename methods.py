@@ -161,14 +161,118 @@ def change_vm_stats(uuid,specs):
     VM = SI.content.searchIndex.FindByUuid(None, uuid, True, True)
 
     if 'cpu' in specs:
-        task = VM.ReconfigVM(vim.vm.ConfigSpec(numCPUs=int(specs['cpu'])))
+        task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(numCPUs=int(specs['cpu'])))
 	tasks.wait_for_tasks(SI, [task])
     
     if 'mem' in specs:
-        task = VM.ReconfigVM(vim.vm.ConfigSpec(memoryMB=long(specs['mem'])))
+        task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(memoryMB=long(specs['mem'])))
 	tasks.wait_for_tasks(SI, [task])
 
     return "I fixed it!"
+
+def add_network(vm, si, content, netName="VM Network"):
+    spec = vim.vm.ConfigSpec()
+    dev_changes = []
+    network_spec = vim.vm.device.VirtualDeviceSpec()
+    network_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+    network_spec.device = vim.vm.device.VirtualVmxnet3()
+    #network_spec.device.addressType = "GeneratedAutomatically"
+    print "Getting a network..."
+    #Get network type
+    for net in content.rootFolder.childEntity[0].network:
+        if net.name == netName:
+	    if isinstance(net, vim.dvs.DistributedVirtualPortgroup):
+	        # Run portgroup code
+		pg_obj = get_obj(content, [vim.dvs.DistributedVirtualPortgroup], netName)
+		dvs_port_connection = vim.dvs.PortConnection()
+		dvs_port_connection.portgroupKey= pg_obj.key
+		dvs_port_connection.switchUuid= pg_obj.config.distributedVirtualSwitch.uuid
+		network_spec.device.backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()
+		network_spec.device.backing.port = dvs_port_connection
+		break
+	    elif isinstance(net, vim.Network):
+	        # Run plain network code
+		network_spec.device.backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
+                network_spec.device.backing.network = get_obj(content, [vim.Network], netName)
+                network_spec.device.backing.deviceName = netName
+		break
+	    else:
+	        print "This name is not a network"
+
+    # Allow the network card to be hot swappable
+    network_spec.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
+    network_spec.device.connectable.startConnected = True
+    network_spec.device.connectable.allowGuestControl = True
+
+    dev_changes.append(network_spec)
+    spec.deviceChange = dev_changes
+    task = []
+    task.append(vm.ReconfigVM_Task(spec=spec))
+    tasks.wait_for_tasks(si, task)
+
+def get_obj(content, vimtype, name):
+    obj = None
+    container = content.viewManager.CreateContainerView(content.rootFolder,vimtype, True)
+
+    for view in container.view:
+        if view.name == name:
+	    obj = view
+	    break
+    return obj
+
+def create_scsi_controller(vm, si):
+    spec = vim.vm.ConfigSpec()
+    dev_changes = []
+    controller_spec = vim.vm.device.VirtualDeviceSpec()
+    controller_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+    controller_spec.device = vim.vm.device.VirtualLsiLogicController()
+    controller_spec.device.sharedBus = vim.vm.device.VirtualSCSIController.Sharing.noSharing 
+    dev_changes.append(controller_spec)
+    spec.deviceChange = dev_changes
+    task = []
+    task.append(vm.ReconfigVM_Task(spec=spec))
+    tasks.wait_for_tasks(si, task)
+    for dev in vm.config.hardware.device:
+        if isinstance(dev, vim.vm.device.VirtualSCSIController):
+	    print "Found our controller"
+	    return dev
+
+def add_disk(vm, si, disk_size=30):
+    spec = vim.vm.ConfigSpec()
+    unit_number = 0
+    controller = None
+    # get all disks on a VM, set unit_number to the next available
+    for dev in vm.config.hardware.device:
+        if hasattr(dev.backing, 'fileName'):
+            unit_number = int(dev.unitNumber) + 1
+            # unit_number 7 reserved for scsi controller
+            if unit_number == 7:
+                unit_number += 1
+            if unit_number >= 16:
+                print "we don't support this many disks"
+                return
+        if isinstance(dev, vim.vm.device.VirtualSCSIController):
+            controller = dev
+	    print "We have a controller"
+        # add disk here
+        dev_changes = []
+        new_disk_kb = int(disk_size) * 1024 * 1024
+        disk_spec = vim.vm.device.VirtualDeviceSpec()
+        disk_spec.fileOperation = "create"
+        disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+        disk_spec.device = vim.vm.device.VirtualDisk()
+        disk_spec.device.backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo()
+        disk_spec.device.backing.thinProvisioned = True
+        disk_spec.device.backing.diskMode = 'persistent'
+        disk_spec.device.unitNumber = unit_number
+        disk_spec.device.capacityInKB = new_disk_kb
+        if controller is None:
+	    print "Creating new controller"
+	    controller = create_scsi_controller(vm,si)
+	disk_spec.device.controllerKey = controller.key
+        dev_changes.append(disk_spec)
+        spec.deviceChange = dev_changes
+        vm.ReconfigVM_Task(spec=spec)
 
 def create_new_vm(specs):
     """Creates a dummy VirtualMachine with 1 vCpu, 128MB of RAM.
@@ -208,6 +312,21 @@ def create_new_vm(specs):
 	           
     new_vm = content.searchIndex.FindByDatastorePath(datacenter, path)
     if new_vm is not None:
+        
+	# Now that the vm shell is created, add a disk to it
+	# If the user requested a specific size, use that, otherwise use default
+        if hasattr(specs, 'disk_size'):
+            add_disk(vm=new_vm, si=SI, disk_size=specs['disk_size'])
+	else:
+	    add_disk(vm=new_vm, si=SI)
+
+        # Add a network to the vm
+	add_network(vm=new_vm, si=SI, content=content)
+
+	# Power on the vm
+	new_vm.PowerOnVM_Task()
+
+	#Respond with the vm summary
         a = new_vm.summary
 	del vars(a.config)['product']
 	del vars(a.runtime)['device']
@@ -225,7 +344,7 @@ def create_new_vm(specs):
 	hostDetails.update(product = b)
 	del hostDetails['featureVersion']
 	fullData.update(host = hostDetails)
-	print a.quickStats
+	#print a.quickStats
 	return fullData
     else:
         return "Could not create vm"

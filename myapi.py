@@ -4,7 +4,6 @@ import json
 import os
 app = Flask(__name__)
 
-app.debug = True
 
 port = int(os.getenv('VCAP_APP_PORT', 8080))
 

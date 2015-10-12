@@ -1,15 +1,17 @@
+# All imports used for the whole program
+
 import atexit
 import json
 import os
+import requests
+import ssl
 
 from pyVim import connect
 from pyVmomi import vmodl
 from pyVmomi import vim
 from tools import tasks
 
-import requests
-import ssl
-
+# Pull in the config info used to create connections to the vshpere host
 with open('config.json') as data_file:
     data = json.load(data_file)
 
@@ -17,6 +19,7 @@ host=data["host"]
 user=data["username"]
 pwd=data["password"]
 
+# This allows the API to work in corp environments
 requests.packages.urllib3.disable_warnings()
 
 if os.getenv("VCAP_APP_PORT"):
@@ -27,6 +30,7 @@ if os.getenv("VCAP_APP_PORT"):
 def debugger():
     return os.getenv("VCAP_APP_PORT")
 
+# Create a connection to the vcsa 
 def server_connection():
     SI = None
     print host
@@ -39,11 +43,12 @@ def server_connection():
         pass
 
     if not SI:
-        # TODO: change so that it throws an error but doesn't exit
         print "Unable to connect to host with supplied info."
 
     return SI 
 
+# Helper function to so the actually traversal and printing of the vms.
+# Includes templates
 def print_vm_info(virtual_machine, depth=1,full_vm_list=None):
     """
     Print information for a particular virtual machine or recurse into a
@@ -74,6 +79,7 @@ def print_vm_info(virtual_machine, depth=1,full_vm_list=None):
     full_vm_list.append(vars(summary.config))
     return
 
+# Root function for get a full list of vms
 def get_all_vm_info():
     try:
         service_instance = server_connection()
@@ -98,13 +104,9 @@ def get_all_vm_info():
 
     return 0
 
-def find_vm_by_uuid(uuid):
-    si = server_connection()
-    search_index = si.content.searchIndex
-    vm = search_index.FindByUuid(None, uuid, True, True)
-    if vm is None:
-        return {"not_found" : {"uuid":uuid}}
-    a = vm.summary
+# Helper function to print a short list of vm details
+def print_short_detail_list(vm_summary):
+    a = vm_summary
     del vars(a.config)['product']
     del vars(a.runtime)['device']
     del vars(a.runtime)['offlineFeatureRequirement']
@@ -124,6 +126,16 @@ def find_vm_by_uuid(uuid):
     print a.quickStats
     return fullData
 
+# Find a specific vm based on the instance UUID
+def find_vm_by_uuid(uuid):
+    si = server_connection()
+    search_index = si.content.searchIndex
+    vm = search_index.FindByUuid(None, uuid, True, True)
+    if vm is None:
+        return {"not_found" : {"uuid":uuid}}
+    return print_short_detail_list(vm.summary)
+
+# Delete a vm from the server based on the uuid
 def delete_vm_from_server(uuid):
     #Get Server connection
     SI = server_connection()
@@ -153,6 +165,7 @@ def delete_vm_from_server(uuid):
     
     return "VM is destroyed"
 
+# Change the stats of a vm based on the uuid. Currently can only change the cpu and memory
 def change_vm_stats(uuid,specs):
     #Get server object
     SI = server_connection()
@@ -170,6 +183,7 @@ def change_vm_stats(uuid,specs):
 
     return "I fixed it!"
 
+# Helper function to add a netowrk connection to a vm
 def add_network(vm, si, content, netName="VM Network"):
     spec = vim.vm.ConfigSpec()
     dev_changes = []
@@ -210,6 +224,7 @@ def add_network(vm, si, content, netName="VM Network"):
     task.append(vm.ReconfigVM_Task(spec=spec))
     tasks.wait_for_tasks(si, task)
 
+# Helper function to get an object refernce
 def get_obj(content, vimtype, name):
     obj = None
     container = content.viewManager.CreateContainerView(content.rootFolder,vimtype, True)
@@ -220,6 +235,7 @@ def get_obj(content, vimtype, name):
 	    break
     return obj
 
+# Helper function to create a scsi controller for a vm
 def create_scsi_controller(vm, si):
     spec = vim.vm.ConfigSpec()
     dev_changes = []
@@ -237,6 +253,7 @@ def create_scsi_controller(vm, si):
 	    print "Found our controller"
 	    return dev
 
+# Helper function to add a disk to a vm
 def add_disk(vm, si, disk_size=30):
     spec = vim.vm.ConfigSpec()
     unit_number = 0
@@ -274,6 +291,7 @@ def add_disk(vm, si, disk_size=30):
         spec.deviceChange = dev_changes
         vm.ReconfigVM_Task(spec=spec)
 
+# Core create vm function that handles generating all the neccasary part
 def create_new_vm(specs):
     """Creates a dummy VirtualMachine with 1 vCpu, 128MB of RAM.
     :param name: String Name for the VirtualMachine
@@ -293,26 +311,22 @@ def create_new_vm(specs):
     vm_name = specs['name']
     datastore_path = '[' + datastore + '] ' + vm_name
 
-    # bare minimum VM shell, no disks. Feel free to edit
-    vmx_file = vim.vm.FileInfo(logDirectory=None,
-                               snapshotDirectory=None,
-                               suspendDirectory=None,
+    # bare minimum VM shell creation
+    vmx_file = vim.vm.FileInfo(logDirectory=None,snapshotDirectory=None,suspendDirectory=None,
                                vmPathName=datastore_path)
 
     config = vim.vm.ConfigSpec(name=specs['name'], memoryMB=long(specs['mem']),
-                               numCPUs=int(specs['cpus']), files=vmx_file, 
-			       guestId=specs['guestid'],
-                               version=str(specs['vm_version']))
+                               numCPUs=int(specs['cpus']), files=vmx_file,
+			       guestId=specs['guestid'], version=str(specs['vm_version']))
 
     print "Creating VM {}...".format(vm_name)
     task = vm_folder.CreateVM_Task(config=config, pool=resource_pool)
     tasks.wait_for_tasks(SI, [task])
-           
     path = datastore_path + '/' + vm_name + '.vmx'
-	           
+
+    # Verify the shell was created
     new_vm = content.searchIndex.FindByDatastorePath(datacenter, path)
     if new_vm is not None:
-        
 	# Now that the vm shell is created, add a disk to it
 	# If the user requested a specific size, use that, otherwise use default
         if hasattr(specs, 'disk_size'):
@@ -327,24 +341,6 @@ def create_new_vm(specs):
 	new_vm.PowerOnVM_Task()
 
 	#Respond with the vm summary
-        a = new_vm.summary
-	del vars(a.config)['product']
-	del vars(a.runtime)['device']
-	del vars(a.runtime)['offlineFeatureRequirement']
-	del vars(a.runtime)['featureRequirement']
-	fullData = vars(a.config)
-	fullData.update(guest = vars(a.guest))
-	fullData.update(storage = vars(a.storage))
-	fullData.update({"overallStatus":a.overallStatus})
-	fullData.update({"powerState":a.runtime.powerState})
-	fullData.update({"bootTime":a.runtime.bootTime})
-	b = vars(a.runtime.host.summary.config.product)
-	del vars(a.runtime.host.summary.config)['product']
-	hostDetails = vars(a.runtime.host.summary.config)
-	hostDetails.update(product = b)
-	del hostDetails['featureVersion']
-	fullData.update(host = hostDetails)
-	#print a.quickStats
-	return fullData
+	return print_short_detail_list(new_vm.summary)
     else:
         return "Could not create vm"

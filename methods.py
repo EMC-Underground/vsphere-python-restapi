@@ -238,7 +238,7 @@ def get_obj(content, vimtype, name):
 
     for view in container.view:
         if view.name == name:
-        obj = view
+            obj = view
         break
     return obj
 

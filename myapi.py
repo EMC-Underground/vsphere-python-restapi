@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 port = int(os.getenv('VCAP_APP_PORT', 8080))
 
-#with open('config.json') as data_file:    
+#with open('config.json') as data_file:
 #    data = json.load(data_file)
 #
 #host=data["host"]
@@ -26,7 +26,7 @@ def debug():
 def get_vms():
     if request.method == 'POST':
         specs = request.get_json()
-	return jsonify(vm = methods.create_new_vm(specs))
+    return jsonify(vm = methods.create_new_vm(specs))
     else:
         return jsonify(vm = methods.get_all_vm_info())
 

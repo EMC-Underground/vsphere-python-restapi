@@ -15,41 +15,42 @@ from tools import tasks
 with open('config.json') as data_file:
     data = json.load(data_file)
 
-host=data["host"]
-user=data["username"]
-pwd=data["password"]
+host = data["host"]
+user = data["username"]
+pwd = data["password"]
 
 # This allows the API to work in corp environments
 requests.packages.urllib3.disable_warnings()
 
+# Check if the env is CF, and set the needed CF env vars
 if os.getenv("VCAP_APP_PORT"):
-    print "you are running in CF"
+    print ("you are running in CF")
     default_context = ssl._create_default_https_context
     ssl._create_default_https_context = ssl._create_unverified_context
 
 def debugger():
     return os.getenv("VCAP_APP_PORT")
 
-# Create a connection to the vcsa 
+# Create a connection to the vcsa
 def server_connection():
     SI = None
-    print host
-    print user
+    print (host)
+    print (user)
     # Attempt to connect to the VCSA
     try:
         SI = connect.SmartConnect(host=host,user=user,pwd=pwd,)
         atexit.register(connect.Disconnect, SI)
-    except IOError, ex:
+    except IOError:
         pass
 
     if not SI:
-        print "Unable to connect to host with supplied info."
+        print ("Unable to connect to host with supplied info.")
 
-    return SI 
+    return SI
 
 # Helper function to so the actually traversal and printing of the vms.
 # Includes templates
-def print_vm_info(virtual_machine, depth=1,full_vm_list=None):
+def print_vm_info(virtual_machine, depth=1, full_vm_list=None):
     """
     Print information for a particular virtual machine or recurse into a
     folder with depth protection
@@ -63,14 +64,14 @@ def print_vm_info(virtual_machine, depth=1,full_vm_list=None):
             return
         vmList = virtual_machine.childEntity
         for c in vmList:
-            print_vm_info(c, depth + 1,full_vm_list)
+            print_vm_info(c, depth + 1, full_vm_list)
         return
     if hasattr(virtual_machine, 'vAppConfig'):
         if depth > maxdepth:
             return
         vmList = virtual_machine.childLink
         for c in vmList:
-            print_vm_info(c, depth + 1,full_vm_list)
+            print_vm_info(c, depth + 1, full_vm_list)
         return
 
     summary = virtual_machine.summary
@@ -84,22 +85,22 @@ def get_all_vm_info():
     try:
         service_instance = server_connection()
         if service_instance is None:
-	    print "Couldn't get the server instance"
-        full_vm_list=[]
+            print ("Couldn't get the server instance")
+        full_vm_list = []
         content = service_instance.RetrieveContent()
-	#vm_json_return = []
-	for child in content.rootFolder.childEntity:
-	    if hasattr(child, 'vmFolder'):
+    #vm_json_return = []
+        for child in content.rootFolder.childEntity:
+            if hasattr(child, 'vmFolder'):
                 datacenter = child
                 vmFolder = datacenter.vmFolder
-		vmList = vmFolder.childEntity
-		for vm in vmList:
-		    print_vm_info(vm,1,full_vm_list)
+                vmList = vmFolder.childEntity
+                for vm in vmList:
+                    print_vm_info(vm, 1, full_vm_list)
 
-            return full_vm_list
+        return full_vm_list
 
     except vmodl.MethodFault as error:
-        print "Caught vmodl fault : " + error.msg
+        print ("Caught vmodl fault : {0}".format(error.msg))
         return -1
 
     return 0
@@ -112,18 +113,18 @@ def print_short_detail_list(vm_summary):
     del vars(a.runtime)['offlineFeatureRequirement']
     del vars(a.runtime)['featureRequirement']
     fullData = vars(a.config)
-    fullData.update(guest = vars(a.guest))
-    fullData.update(storage = vars(a.storage))
+    fullData.update(guest=vars(a.guest))
+    fullData.update(storage=vars(a.storage))
     fullData.update({"overallStatus":a.overallStatus})
     fullData.update({"powerState":a.runtime.powerState})
     fullData.update({"bootTime":a.runtime.bootTime})
     b = vars(a.runtime.host.summary.config.product)
     del vars(a.runtime.host.summary.config)['product']
     hostDetails = vars(a.runtime.host.summary.config)
-    hostDetails.update(product = b)
+    hostDetails.update(product=b)
     del hostDetails['featureVersion']
-    fullData.update(host = hostDetails)
-    print a.quickStats
+    fullData.update(host=hostDetails)
+    print(a.quickStats)
     return fullData
 
 # Find a specific vm based on the instance UUID
@@ -132,12 +133,14 @@ def find_vm_by_uuid(uuid):
     search_index = si.content.searchIndex
     vm = search_index.FindByUuid(None, uuid, True, True)
     if vm is None:
-        return {"not_found" : {"uuid":uuid}}
+        vm = search_index.FindByUuid(None, uuid, True, False)
+        if vm is None:
+            return {"not_found" : {"uuid":uuid}}
     return print_short_detail_list(vm.summary)
 
 # Delete a vm from the server based on the uuid
 def delete_vm_from_server(uuid):
-    #Get Server connection
+    # Get Server connection
     SI = server_connection()
     if SI is None:
         return "Unable to connect to server"
@@ -146,40 +149,44 @@ def delete_vm_from_server(uuid):
     if search_index is None:
         return "Unable to grab search index"
 
-    #Find the vm to delete
+    # Find the vm to delete
     vm = search_index.FindByUuid(None, uuid, True, True)
 
-    #Verify we have a vm
+    # Verify we have a vm
     if vm is None:
-        return "Unable to locate VM with UUID of "+uuid
+        return "Unable to locate VM with UUID of " + uuid
 
     # Ensure VM is powered off
     if format(vm.runtime.powerState) == "poweredOn":
         TASK = vm.PowerOffVM_Task()
-	# TODO: verify that this does not cause a full app wait
-	tasks.wait_for_tasks(SI, [TASK])
-    
-    #Destroy vm
+        # TODO: verify that this does not cause a full app wait
+        tasks.wait_for_tasks(SI, [TASK])
+
+    # Destroy vm
     TASK = vm.Destroy_Task()
     tasks.wait_for_tasks(SI, [TASK])
-    
+
     return "VM is destroyed"
 
 # Change the stats of a vm based on the uuid. Currently can only change the cpu and memory
 def change_vm_stats(uuid,specs):
-    #Get server object
+    # Get server object
     SI = server_connection()
 
-    #Find the vm to change
+    # Find the vm to change
     VM = SI.content.searchIndex.FindByUuid(None, uuid, True, True)
+    if VM is None:
+        VM = SI.content.searchIndex.FindByUuid(None, uuid, True, False)
+        if VM is None:
+            return "Couldn't find VM with UUID " + uuid
 
     if 'cpu' in specs:
         task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(numCPUs=int(specs['cpu'])))
-	tasks.wait_for_tasks(SI, [task])
-    
+        tasks.wait_for_tasks(SI, [task])
+
     if 'mem' in specs:
         task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(memoryMB=long(specs['mem'])))
-	tasks.wait_for_tasks(SI, [task])
+        tasks.wait_for_tasks(SI, [task])
 
     return "I fixed it!"
 
@@ -191,27 +198,27 @@ def add_network(vm, si, content, netName="VM Network"):
     network_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
     network_spec.device = vim.vm.device.VirtualVmxnet3()
     #network_spec.device.addressType = "GeneratedAutomatically"
-    print "Getting a network..."
+    print("Getting a network...")
     #Get network type
     for net in content.rootFolder.childEntity[0].network:
         if net.name == netName:
-	    if isinstance(net, vim.dvs.DistributedVirtualPortgroup):
-	        # Run portgroup code
-		pg_obj = get_obj(content, [vim.dvs.DistributedVirtualPortgroup], netName)
-		dvs_port_connection = vim.dvs.PortConnection()
-		dvs_port_connection.portgroupKey= pg_obj.key
-		dvs_port_connection.switchUuid= pg_obj.config.distributedVirtualSwitch.uuid
-		network_spec.device.backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()
-		network_spec.device.backing.port = dvs_port_connection
-		break
-	    elif isinstance(net, vim.Network):
-	        # Run plain network code
-		network_spec.device.backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
+            if isinstance(net, vim.dvs.DistributedVirtualPortgroup):
+                # Run portgroup code
+                pg_obj = get_obj(content, [vim.dvs.DistributedVirtualPortgroup], netName)
+                dvs_port_connection = vim.dvs.PortConnection()
+                dvs_port_connection.portgroupKey= pg_obj.key
+                dvs_port_connection.switchUuid= pg_obj.config.distributedVirtualSwitch.uuid
+                network_spec.device.backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()
+                network_spec.device.backing.port = dvs_port_connection
+                break
+            elif isinstance(net, vim.Network):
+                # Run plain network code
+                network_spec.device.backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
                 network_spec.device.backing.network = get_obj(content, [vim.Network], netName)
                 network_spec.device.backing.deviceName = netName
-		break
-	    else:
-	        print "This name is not a network"
+                break
+        else:
+            print("This name is not a network")
 
     # Allow the network card to be hot swappable
     network_spec.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
@@ -231,8 +238,8 @@ def get_obj(content, vimtype, name):
 
     for view in container.view:
         if view.name == name:
-	    obj = view
-	    break
+        obj = view
+        break
     return obj
 
 # Helper function to create a scsi controller for a vm
@@ -242,7 +249,7 @@ def create_scsi_controller(vm, si):
     controller_spec = vim.vm.device.VirtualDeviceSpec()
     controller_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
     controller_spec.device = vim.vm.device.VirtualLsiLogicController()
-    controller_spec.device.sharedBus = vim.vm.device.VirtualSCSIController.Sharing.noSharing 
+    controller_spec.device.sharedBus = vim.vm.device.VirtualSCSIController.Sharing.noSharing
     dev_changes.append(controller_spec)
     spec.deviceChange = dev_changes
     task = []
@@ -250,8 +257,8 @@ def create_scsi_controller(vm, si):
     tasks.wait_for_tasks(si, task)
     for dev in vm.config.hardware.device:
         if isinstance(dev, vim.vm.device.VirtualSCSIController):
-	    print "Found our controller"
-	    return dev
+            print("Found our controller")
+            return dev
 
 # Helper function to add a disk to a vm
 def add_disk(vm, si, disk_size=30):
@@ -270,7 +277,7 @@ def add_disk(vm, si, disk_size=30):
                 return
         if isinstance(dev, vim.vm.device.VirtualSCSIController):
             controller = dev
-	    print "We have a controller"
+        print("We have a controller")
         # add disk here
         dev_changes = []
         new_disk_kb = int(disk_size) * 1024 * 1024
@@ -284,9 +291,9 @@ def add_disk(vm, si, disk_size=30):
         disk_spec.device.unitNumber = unit_number
         disk_spec.device.capacityInKB = new_disk_kb
         if controller is None:
-	    print "Creating new controller"
-	    controller = create_scsi_controller(vm,si)
-	disk_spec.device.controllerKey = controller.key
+            print "Creating new controller"
+            controller = create_scsi_controller(vm,si)
+        disk_spec.device.controllerKey = controller.key
         dev_changes.append(disk_spec)
         spec.deviceChange = dev_changes
         vm.ReconfigVM_Task(spec=spec)
@@ -317,9 +324,9 @@ def create_new_vm(specs):
 
     config = vim.vm.ConfigSpec(name=specs['name'], memoryMB=long(specs['mem']),
                                numCPUs=int(specs['cpus']), files=vmx_file,
-			       guestId=specs['guestid'], version=str(specs['vm_version']))
+                   guestId=specs['guestid'], version=str(specs['vm_version']))
 
-    print "Creating VM {}...".format(vm_name)
+    print("Creating VM {0}...".format(vm_name))
     task = vm_folder.CreateVM_Task(config=config, pool=resource_pool)
     tasks.wait_for_tasks(SI, [task])
     path = datastore_path + '/' + vm_name + '.vmx'
@@ -327,20 +334,20 @@ def create_new_vm(specs):
     # Verify the shell was created
     new_vm = content.searchIndex.FindByDatastorePath(datacenter, path)
     if new_vm is not None:
-	# Now that the vm shell is created, add a disk to it
-	# If the user requested a specific size, use that, otherwise use default
+        # Now that the vm shell is created, add a disk to it
+        # If the user requested a specific size, use that, otherwise use default
         if hasattr(specs, 'disk_size'):
             add_disk(vm=new_vm, si=SI, disk_size=specs['disk_size'])
-	else:
-	    add_disk(vm=new_vm, si=SI)
+        else:
+            add_disk(vm=new_vm, si=SI)
 
         # Add a network to the vm
-	add_network(vm=new_vm, si=SI, content=content)
+        add_network(vm=new_vm, si=SI, content=content)
 
-	# Power on the vm
-	new_vm.PowerOnVM_Task()
+        # Power on the vm
+        new_vm.PowerOnVM_Task()
 
-	#Respond with the vm summary
-	return print_short_detail_list(new_vm.summary)
+        #Respond with the vm summary
+        return print_short_detail_list(new_vm.summary)
     else:
         return "Could not create vm"

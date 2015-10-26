@@ -26,7 +26,7 @@ def debug():
 def get_vms():
     if request.method == 'POST':
         specs = request.get_json()
-    return jsonify(vm = methods.create_new_vm(specs))
+        return jsonify(vm = methods.create_new_vm(specs))
     else:
         return jsonify(vm = methods.get_all_vm_info())
 

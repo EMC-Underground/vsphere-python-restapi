@@ -40,7 +40,7 @@ def get_vm(uuid):
     else:
         return jsonify(methods.find_vm_by_uuid(uuid))
           
-@app.route('vms/<uuid>/guestid/', methods=['GET'])
+@app.route('/vms/<uuid>/guestid/', methods=['GET'])
 def get_guestid(uuid):
     if request.methods == 'GET':
         return methods.get_vm_guestid(uuid)

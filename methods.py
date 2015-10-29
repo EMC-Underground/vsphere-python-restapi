@@ -128,9 +128,10 @@ def print_short_detail_list(vm_summary):
     return fullData
 
 # Find a specific vm based on the instance UUID
-def find_vm_by_uuid(uuid):
+def find_vm_by_uuid(UUID):
     si = server_connection()
     search_index = si.content.searchIndex
+    uuid = UUID.lower()
     vm = search_index.FindByUuid(None, uuid, True, True)
     if vm is None:
         vm = search_index.FindByUuid(None, uuid, True, False)
@@ -351,3 +352,8 @@ def create_new_vm(specs):
         return print_short_detail_list(new_vm.summary)
     else:
         return "Could not create vm"
+
+# Function to get just a vms's guestid from vmware
+def get_vm_guestid(uuid):
+    vmStats = find_vm_by_uuid(uuid)
+    return vmStats['guestId']

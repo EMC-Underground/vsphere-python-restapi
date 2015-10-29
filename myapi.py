@@ -39,8 +39,11 @@ def get_vm(uuid):
         return methods.change_vm_stats(uuid,specs)
     else:
         return jsonify(methods.find_vm_by_uuid(uuid))
-
-
+          
+@app.route('vms/<uuid>/guestid/', methods=['GET'])
+def get_guestid(uuid):
+    if request.methods == 'GET':
+        return methods.get_vm_guestid(uuid)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port)

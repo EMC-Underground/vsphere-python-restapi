@@ -23,7 +23,7 @@ pwd = data["password"]
 requests.packages.urllib3.disable_warnings()
 
 # Check if the env is CF, and set the needed CF env vars
-if os.getenv("VCAP_APP_PORT"):
+if os.getenv("PORT"):
     print ("you are running in CF")
     default_context = ssl._create_default_https_context
     ssl._create_default_https_context = ssl._create_unverified_context

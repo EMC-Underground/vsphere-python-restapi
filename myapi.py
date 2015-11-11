@@ -42,7 +42,7 @@ def get_vm(uuid):
           
 @app.route('/vms/<uuid>/guestid/', methods=['GET'])
 def get_guestid(uuid):
-    if request.methods == 'GET':
+    if request.method == 'GET':
         return methods.get_vm_guestid(uuid)
 
 if __name__ == '__main__':

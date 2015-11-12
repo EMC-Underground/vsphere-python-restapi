@@ -22,13 +22,13 @@ resource_pool_name = None
 vm_folder_name = None
 
 # Get the resource pool name or use default
-if data['resource_pool'] is not None:
+if hasattr(data, 'resource_pool'):
     resource_pool_name = data['resource_pool']
 else:
     resource_pool_name = "api_vms"
 
 # Get the vm folder name or use the default
-if data['vm_folder'] is not None:
+if hasattr(data, 'vm_folder'):
     vm_folder_name = data['vm_folder']
 else:
     vm_folder_name = "api_vm_folder"

@@ -10,7 +10,6 @@ from pyVim import connect
 from pyVmomi import vmodl
 from pyVmomi import vim
 from tools import tasks
-from goto import goto, label
 
 # Pull in the config info used to create connections to the vshpere host
 with open('config.json') as data_file:
@@ -335,8 +334,6 @@ def create_new_vm(specs):
                 if pool.name == resource_pool_name:
                     resource_pool = pool
                     datacenter = dc
-                    goto .breakall
-    label .breakall
 
     # Find the api vm folder
     for folder in datacenters[dc-index].vmFolder.childEntity:

@@ -346,7 +346,7 @@ def create_new_vm(specs):
             break
 
     # Find the api vm folder
-    for folder in datacenters[dc-index].vmFolder.childEntity:
+    for folder in datacenter.vmFolder.childEntity:
         if folder.name == vm_folder_name:
             print("Got the vm folder...")
             vm_folder = folder

@@ -48,8 +48,6 @@ def debugger():
 # Create a connection to the vcsa
 def server_connection():
     SI = None
-    print (host)
-    print (user)
     # Attempt to connect to the VCSA
     try:
         SI = connect.SmartConnect(host=host,user=user,pwd=pwd,)

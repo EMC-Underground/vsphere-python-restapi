@@ -340,10 +340,10 @@ def create_new_vm(specs):
                     datacenter = dc
                     loopbreak = True
                     break
+            if loopbreak:
+                break
         if loopbreak:
             break
-    if loopbreak:
-        break
 
     # Find the api vm folder
     for folder in datacenters[dc-index].vmFolder.childEntity:

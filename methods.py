@@ -16,19 +16,19 @@ from goto import goto, label
 with open('config.json') as data_file:
     data = json.load(data_file)
 
-host = data["host"]
-user = data["username"]
-pwd = data["password"]
+host = data['host']
+user = data['username']
+pwd = data['password']
 
 # Get the resource pool name or use default
 if hasattr(data, 'resource_pool'):
-    resource-pool-name = data["resource_pool"]
+    resource-pool-name = data['resource_pool']
 else:
     resource-pool-name = "api_vms"
 
 # Get the vm folder name or use the default
 if hasattr(data, 'vm_folder'):
-    vm-folder-name = data["vm_folder"]
+    vm-folder-name = data['vm_folder']
 else:
     vm-folder-name = "api_vm_folder"
 

@@ -337,6 +337,7 @@ def create_new_vm(specs):
                     print("Got the resource pool and dc...")
                     resource_pool = pool
                     datacenter = dc
+		    break
 
     # Find the api vm folder
     for folder in datacenters[dc-index].vmFolder.childEntity:

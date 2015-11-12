@@ -19,6 +19,8 @@ with open('config.json') as data_file:
 host = data['host']
 user = data['username']
 pwd = data['password']
+resource-pool-name = None
+vm-folder-name = None
 
 # Get the resource pool name or use default
 if data['resource_pool'] is not None:

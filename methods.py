@@ -332,12 +332,14 @@ def create_new_vm(specs):
         for host in dc.hostFolder.childEntity:
             for pool in host.resourcePool.resourcePool:
                 if pool.name == resource_pool_name:
+                    print("Got the resource pool and dc...")
                     resource_pool = pool
                     datacenter = dc
 
     # Find the api vm folder
     for folder in datacenters[dc-index].vmFolder.childEntity:
         if folder.name == vm_folder_name:
+            print("Got the vm folder...")
             vm_folder = folder
             break
 
@@ -354,7 +356,9 @@ def create_new_vm(specs):
 
     print("Creating VM {0}...".format(vm_name))
     task = vm_folder.CreateVM_Task(config=config, pool=resource_pool)
+    print("Sending to the text manager")
     tasks.wait_for_tasks(SI, [task])
+    print("Done...now to find it...")
     path = datastore_path + '/' + vm_name + '.vmx'
 
     # Verify the shell was created
@@ -362,15 +366,18 @@ def create_new_vm(specs):
     if new_vm is not None:
         # Now that the vm shell is created, add a disk to it
         # If the user requested a specific size, use that, otherwise use default
+        print("Found it...now adding a disk...")
         if hasattr(specs, 'disk_size'):
             add_disk(vm=new_vm, si=SI, disk_size=specs['disk_size'])
         else:
             add_disk(vm=new_vm, si=SI)
 
         # Add a network to the vm
+        print("...adding the network...")
         add_network(vm=new_vm, si=SI, content=content)
 
         # Power on the vm
+        print("...and powering it on!")
         new_vm.PowerOnVM_Task()
 
         #Respond with the vm summary

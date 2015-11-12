@@ -338,7 +338,7 @@ def create_new_vm(specs):
                     print("Got the resource pool and dc...")
                     resource_pool = pool
                     datacenter = dc
-		            loopbreak = True
+                    loopbreak = True
                     break
         if loopbreak:
             break

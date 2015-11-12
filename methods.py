@@ -19,20 +19,20 @@ with open('config.json') as data_file:
 host = data['host']
 user = data['username']
 pwd = data['password']
-resource-pool-name = None
-vm-folder-name = None
+resource_pool_name = None
+vm_folder_name = None
 
 # Get the resource pool name or use default
 if data['resource_pool'] is not None:
-    resource-pool-name = data['resource_pool']
+    resource_pool_name = data['resource_pool']
 else:
-    resource-pool-name = "api_vms"
+    resource_pool_name = "api_vms"
 
 # Get the vm folder name or use the default
 if data['vm_folder'] is not None:
-    vm-folder-name = data['vm_folder']
+    vm_folder_name = data['vm_folder']
 else:
-    vm-folder-name = "api_vm_folder"
+    vm_folder_name = "api_vm_folder"
 
 # This allows the API to work in corp environments
 requests.packages.urllib3.disable_warnings()
@@ -332,7 +332,7 @@ def create_new_vm(specs):
     for dc in datacenters:
         for host in dc.hostFolder.childEntity:
             for pool in host.resourcePool.resourcePool:
-                if pool.name == resource-pool-name:
+                if pool.name == resource_pool_name:
                     resource_pool = pool
                     datacenter = dc
                     goto .breakall
@@ -340,7 +340,7 @@ def create_new_vm(specs):
 
     # Find the api vm folder
     for folder in datacenters[dc-index].vmFolder.childEntity:
-        if folder.name == vm-folder-name:
+        if folder.name == vm_folder_name:
             vm_folder = folder
             break
 

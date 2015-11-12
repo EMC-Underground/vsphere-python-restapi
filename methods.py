@@ -327,9 +327,9 @@ def create_new_vm(specs):
 
     # Find the api resource pool
     datacenters = content.rootFolder.childEntity
-    for each dc in datacenters:
-        for each host in dc.hostFolder.childEntity:
-            for each pool in host.resourcePool.resourcePool:
+    for dc in datacenters:
+        for host in dc.hostFolder.childEntity:
+            for pool in host.resourcePool.resourcePool:
                 if pool.name == resource-pool-name:
                     resource_pool = pool
                     datacenter = dc
@@ -337,7 +337,7 @@ def create_new_vm(specs):
     label .breakall
 
     # Find the api vm folder
-    for each folder in datacenters[dc-index].vmFolder.childEntity:
+    for folder in datacenters[dc-index].vmFolder.childEntity:
         if folder.name == vm-folder-name
             vm_folder = folder
             break

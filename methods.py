@@ -335,9 +335,9 @@ def create_new_vm(specs):
         for host in dc.hostFolder.childEntity:
             for pool in host.resourcePool.resourcePool:
                 if pool.name == resource_pool_name:
-                    print("Got the resource pool and dc...")
                     resource_pool = pool
                     datacenter = dc
+                    print("Got the resource pool and dc...")
                     loopbreak = True
                     break
             if loopbreak:

@@ -330,6 +330,7 @@ def create_new_vm(specs):
     print("Finding the resource pool")
     # Find the api resource pool
     datacenters = content.rootFolder.childEntity
+    loopbreak = False
     for dc in datacenters:
         for host in dc.hostFolder.childEntity:
             for pool in host.resourcePool.resourcePool:
@@ -337,7 +338,12 @@ def create_new_vm(specs):
                     print("Got the resource pool and dc...")
                     resource_pool = pool
                     datacenter = dc
-		    break
+		            loopbreak = True
+                    break
+        if loopbreak:
+            break
+    if loopbreak:
+        break
 
     # Find the api vm folder
     for folder in datacenters[dc-index].vmFolder.childEntity:

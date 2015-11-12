@@ -10,6 +10,7 @@ from pyVim import connect
 from pyVmomi import vmodl
 from pyVmomi import vim
 from tools import tasks
+from goto import goto, label
 
 # Pull in the config info used to create connections to the vshpere host
 with open('config.json') as data_file:
@@ -19,11 +20,23 @@ host = data["host"]
 user = data["username"]
 pwd = data["password"]
 
+# Get the resource pool name or use default
+if hasattr(data, 'resource_pool'):
+    resource-pool-name = data["resource_pool"]
+else:
+    resource-pool-name = "api_vms"
+
+# Get the vm folder name or use the default
+if hasattr(data, 'vm_folder'):
+    vm-folder-name = data["vm_folder"]
+else:
+    vm-folder-name = "api_vm_folder"
+
 # This allows the API to work in corp environments
 requests.packages.urllib3.disable_warnings()
 
 # Check if the env is CF, and set the needed CF env vars
-if os.getenv("VCAP_APP_PORT"):
+if os.getenv("PORT"):
     print ("you are running in CF")
     default_context = ssl._create_default_https_context
     ssl._create_default_https_context = ssl._create_unverified_context
@@ -240,7 +253,7 @@ def get_obj(content, vimtype, name):
     for view in container.view:
         if view.name == name:
             obj = view
-        break
+            break
     return obj
 
 # Helper function to create a scsi controller for a vm
@@ -278,26 +291,26 @@ def add_disk(vm, si, disk_size=30):
                 return
         if isinstance(dev, vim.vm.device.VirtualSCSIController):
             controller = dev
-        print("We have a controller")
-        # add disk here
-        dev_changes = []
-        new_disk_kb = int(disk_size) * 1024 * 1024
-        disk_spec = vim.vm.device.VirtualDeviceSpec()
-        disk_spec.fileOperation = "create"
-        disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
-        disk_spec.device = vim.vm.device.VirtualDisk()
-        disk_spec.device.backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo()
-        disk_spec.device.backing.thinProvisioned = True
-        disk_spec.device.backing.diskMode = 'persistent'
-        disk_spec.device.unitNumber = unit_number
-        disk_spec.device.capacityInKB = new_disk_kb
-        if controller is None:
-            print "Creating new controller"
-            controller = create_scsi_controller(vm,si)
-        disk_spec.device.controllerKey = controller.key
-        dev_changes.append(disk_spec)
-        spec.deviceChange = dev_changes
-        vm.ReconfigVM_Task(spec=spec)
+            print("We have a controller")
+    # add disk here
+    dev_changes = []
+    new_disk_kb = int(disk_size) * 1024 * 1024
+    disk_spec = vim.vm.device.VirtualDeviceSpec()
+    disk_spec.fileOperation = "create"
+    disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+    disk_spec.device = vim.vm.device.VirtualDisk()
+    disk_spec.device.backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo()
+    disk_spec.device.backing.thinProvisioned = True
+    disk_spec.device.backing.diskMode = 'persistent'
+    disk_spec.device.unitNumber = unit_number
+    disk_spec.device.capacityInKB = new_disk_kb
+    if controller is None:
+        print "Creating new controller"
+        controller = create_scsi_controller(vm,si)
+    disk_spec.device.controllerKey = controller.key
+    dev_changes.append(disk_spec)
+    spec.deviceChange = dev_changes
+    vm.ReconfigVM_Task(spec=spec)
 
 # Core create vm function that handles generating all the neccasary part
 def create_new_vm(specs):
@@ -310,11 +323,24 @@ def create_new_vm(specs):
     """
     SI = server_connection()
     content = SI.RetrieveContent()
-    datacenter = content.rootFolder.childEntity[0]
-    vm_folder = datacenter.vmFolder
-    hosts = datacenter.hostFolder.childEntity
-    resource_pool = hosts[0].resourcePool
     datastore = specs['datastore']
+
+    # Find the api resource pool
+    datacenters = content.rootFolder.childEntity
+    for each dc in datacenters:
+        for each host in dc.hostFolder.childEntity:
+            for each pool in host.resourcePool.resourcePool:
+                if pool.name == resource-pool-name:
+                    resource_pool = pool
+                    datacenter = dc
+                    goto .breakall
+    label .breakall
+
+    # Find the api vm folder
+    for each folder in datacenters[dc-index].vmFolder.childEntity:
+        if folder.name == vm-folder-name
+            vm_folder = folder
+            break
 
     vm_name = specs['name']
     datastore_path = '[' + datastore + '] ' + vm_name

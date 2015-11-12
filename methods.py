@@ -53,6 +53,7 @@ def server_connection():
     # Attempt to connect to the VCSA
     try:
         SI = connect.SmartConnect(host=host,user=user,pwd=pwd,)
+        print("Made the connection")
         atexit.register(connect.Disconnect, SI)
     except IOError:
         pass
@@ -326,6 +327,7 @@ def create_new_vm(specs):
     content = SI.RetrieveContent()
     datastore = specs['datastore']
 
+    print("Finding the resource pool")
     # Find the api resource pool
     datacenters = content.rootFolder.childEntity
     for dc in datacenters:

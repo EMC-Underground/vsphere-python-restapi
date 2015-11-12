@@ -21,13 +21,13 @@ user = data['username']
 pwd = data['password']
 
 # Get the resource pool name or use default
-if hasattr(data, 'resource_pool'):
+if data['resource_pool'] is not None:
     resource-pool-name = data['resource_pool']
 else:
     resource-pool-name = "api_vms"
 
 # Get the vm folder name or use the default
-if hasattr(data, 'vm_folder'):
+if data['vm_folder'] is not None:
     vm-folder-name = data['vm_folder']
 else:
     vm-folder-name = "api_vm_folder"

@@ -394,5 +394,6 @@ def create_new_vm(specs):
 
 # Function to get just a vms's guestid from vmware
 def get_vm_guestid(uuid):
+    print("Searching for guest id for {0}".format(uuid))
     vmStats = find_vm_by_uuid(uuid)
     return vmStats['guestId']

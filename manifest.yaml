@@ -1,6 +1,6 @@
 ---
 applications:
 - name: labapi
-  memory: 512M
+  memory: 1024M
   buildpack: python_buildpack
   command: python myapi.py

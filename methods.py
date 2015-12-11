@@ -90,7 +90,8 @@ def print_vm_info(virtual_machine, depth=1, full_vm_list=None):
     summary = virtual_machine.summary
     if hasattr(summary.config, 'product'):
         del vars(summary.config)['product']
-    full_vm_list.append(vars(summary.config))
+    if summary.config.template == False:
+        full_vm_list.append(vars(summary.config))
     return
 
 # Root function for get a full list of vms

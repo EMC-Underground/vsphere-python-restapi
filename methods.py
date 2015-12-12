@@ -144,7 +144,6 @@ def print_short_detail_list(vm):
 	elif opts.key == "Application":
 	    tags.update({opts.key: opts.value})
     fullData.update({"extraConfig":tags})
-    print(fullData)
 
     b = vars(a.runtime.host.summary.config.product)
     del vars(a.runtime.host.summary.config)['product']
@@ -429,3 +428,58 @@ def get_vm_guestid(uuid):
     print("Searching for guest id for {0}".format(uuid))
     vmStats = find_vm_by_uuid(uuid)
     return vmStats['guestId']
+
+def get_vm_attribute(uuid, attr):
+    print("Searching for {0} in {1}".format(attr, uuid))
+    vmStats = find_vm_by_uuid(uuid)
+    #vmStats = json.load(vm)
+    return_value = "null"
+    break_var = False
+    print("Entering Core attrs")
+    for key1, value1 in vmStats.iteritems():
+        print("key is {0}".format(key1))
+        if key1 == attr:
+	    return_value = value1
+	    break_var = True
+
+	if key1 == "extraConfig":
+	    print("Searching in {0}".format(key1))
+	    for key2, value2 in value1.iteritems():
+	        if key2 == attr:
+		    return_value = value2
+		    break_var = True
+
+        if key1 == "guest":
+	    print("Searching in {0}".format(key1))
+	    for key2, value2 in value1.iteritems():
+	        if key2 == attr:
+	            return_value = value2
+		    break_var = True
+
+	elif key1 == "host":
+	    print("Searching in {0}".format(key1))
+	    for key2, value2 in value1.iteritems():
+	        if key2 == attr:
+	            return_value = value2
+		    break_var = True
+
+		elif key2 == "product":
+		    print("Searching in {0}".format(key2))
+		    for key3, value3 in value2.iteritems():
+		        if key3 == attr:
+			    return_value = value3
+			    break_var = True
+			    break
+                if break_var:
+		    break
+
+	elif key1 == "storage":
+	    print("Searching in {0}".format(key1))
+	    for key2, value2 in value1.iteritems():
+	        if key2 == attr:
+	            return_value = value2
+		    break_var = True
+        if break_var:
+	    break
+
+    return str(return_value)

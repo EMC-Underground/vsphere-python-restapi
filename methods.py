@@ -128,6 +128,7 @@ def print_short_detail_list(vm):
     del vars(a.runtime)['offlineFeatureRequirement']
     del vars(a.runtime)['featureRequirement']
     fullData = vars(a.config)
+    del vars(a.guest)['guestId']
     fullData.update(guest=vars(a.guest))
     fullData.update(storage=vars(a.storage))
     fullData.update({"overallStatus":a.overallStatus})
@@ -438,35 +439,35 @@ def get_vm_attribute(uuid, attr):
     print("Entering Core attrs")
     for key1, value1 in vmStats.iteritems():
         print("key is {0}".format(key1))
-        if key1 == attr:
+        if key1.lower() == attr.lower():
 	    return_value = value1
 	    break_var = True
 
 	if key1 == "extraConfig":
 	    print("Searching in {0}".format(key1))
 	    for key2, value2 in value1.iteritems():
-	        if key2 == attr:
+	        if key2.lower() == attr.lower():
 		    return_value = value2
 		    break_var = True
 
         if key1 == "guest":
 	    print("Searching in {0}".format(key1))
 	    for key2, value2 in value1.iteritems():
-	        if key2 == attr:
+	        if key2.lower() == attr.lower():
 	            return_value = value2
 		    break_var = True
 
 	elif key1 == "host":
 	    print("Searching in {0}".format(key1))
 	    for key2, value2 in value1.iteritems():
-	        if key2 == attr:
+	        if key2.lower() == attr.lower():
 	            return_value = value2
 		    break_var = True
 
 		elif key2 == "product":
 		    print("Searching in {0}".format(key2))
 		    for key3, value3 in value2.iteritems():
-		        if key3 == attr:
+		        if key3.lower() == attr.lower():
 			    return_value = value3
 			    break_var = True
 			    break
@@ -476,7 +477,7 @@ def get_vm_attribute(uuid, attr):
 	elif key1 == "storage":
 	    print("Searching in {0}".format(key1))
 	    for key2, value2 in value1.iteritems():
-	        if key2 == attr:
+	        if key2.lower() == attr.lower():
 	            return_value = value2
 		    break_var = True
         if break_var:

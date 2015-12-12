@@ -4,5 +4,8 @@
   "cpus":"1",
   "name":"API_Test_VM",
   "guestid":"ubuntu64Guest",
-  "vm_version":"vmx-10"
+  "vm_version":"vmx-10",
+  "user":"<username of vm requestor>", #optional
+  "language":"<code language that vm will be used for>", #optional
+  "application":"<What base application will be written for dev>" #optional
 }

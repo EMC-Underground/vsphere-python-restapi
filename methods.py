@@ -378,11 +378,16 @@ def create_new_vm(specs):
     config.extraConfig = []
     opt = vim.option.OptionValue()
     options_values = {}
-    if hasattr(specs, 'user'):
+    #if hasattr(specs, "user"):
+    if 'user' in specs:
+        print("Got user: {0}".format(specs['user']))
         options_values.update({"User":specs['user']})
-    if hasattr(specs, 'language'):
+    #if hasattr(specs, "language"):
+    if 'language' in specs:
+        print("Got language: {0}".format(specs['language']))
         options_values.update({"Language":specs['language']})
-    if hasattr(specs, 'application'):
+    if 'application' in specs:
+        print("Got application: {0}".format(specs['application']))
         options_values.update({"Application":specs['application']})
 
     for k, v in options_values.iteritems():
@@ -423,12 +428,7 @@ def create_new_vm(specs):
     else:
         return "Could not create vm"
 
-# Function to get just a vms's guestid from vmware
-def get_vm_guestid(uuid):
-    print("Searching for guest id for {0}".format(uuid))
-    vmStats = find_vm_by_uuid(uuid)
-    return vmStats['guestId']
-
+# Function to get a single attribute of a vm
 def get_vm_attribute(uuid, attr):
     print("Searching for {0} in {1}".format(attr, uuid))
     vmStats = find_vm_by_uuid(uuid)

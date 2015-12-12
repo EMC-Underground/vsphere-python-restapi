@@ -120,7 +120,8 @@ def get_all_vm_info():
     return 0
 
 # Helper function to print a short list of vm details
-def print_short_detail_list(vm_summary):
+def print_short_detail_list(vm):
+    vm_summary = vm.summary
     a = vm_summary
     del vars(a.config)['product']
     del vars(a.runtime)['device']
@@ -132,13 +133,25 @@ def print_short_detail_list(vm_summary):
     fullData.update({"overallStatus":a.overallStatus})
     fullData.update({"powerState":a.runtime.powerState})
     fullData.update({"bootTime":a.runtime.bootTime})
+
+    # Grab the tags from vm.config
+    tags = {}
+    for opts in vm.config.extraConfig:
+        if opts.key == "Language":
+	    tags.update({opts.key: opts.value})
+	elif opts.key == "User":
+	    tags.update({opts.key: opts.value})
+	elif opts.key == "Application":
+	    tags.update({opts.key: opts.value})
+    fullData.update({"extraConfig":tags})
+    print(fullData)
+
     b = vars(a.runtime.host.summary.config.product)
     del vars(a.runtime.host.summary.config)['product']
     hostDetails = vars(a.runtime.host.summary.config)
     hostDetails.update(product=b)
     del hostDetails['featureVersion']
     fullData.update(host=hostDetails)
-    print(a.quickStats)
     return fullData
 
 # Find a specific vm based on the instance UUID
@@ -151,7 +164,7 @@ def find_vm_by_uuid(UUID):
         vm = search_index.FindByUuid(None, uuid, True, False)
         if vm is None:
             return {"not_found" : {"uuid":uuid}}
-    return print_short_detail_list(vm.summary)
+    return print_short_detail_list(vm)
 
 # Delete a vm from the server based on the uuid
 def delete_vm_from_server(uuid):
@@ -362,6 +375,24 @@ def create_new_vm(specs):
                                numCPUs=int(specs['cpus']), files=vmx_file,
                    guestId=specs['guestid'], version=str(specs['vm_version']))
 
+    # Add custom tags
+    config.extraConfig = []
+    opt = vim.option.OptionValue()
+    options_values = {}
+    if hasattr(specs, 'user'):
+        options_values.update({"User":specs['user']})
+    if hasattr(specs, 'language'):
+        options_values.update({"Language":specs['language']})
+    if hasattr(specs, 'application'):
+        options_values.update({"Application":specs['application']})
+
+    for k, v in options_values.iteritems():
+        opt.key = k
+	opt.value = v
+	config.extraConfig.append(opt)
+	opt = vim.option.OptionValue()
+
+    # Send off creeation task
     print("Creating VM {0}...".format(vm_name))
     task = vm_folder.CreateVM_Task(config=config, pool=resource_pool)
     print("Sending to the text manager")
@@ -386,10 +417,10 @@ def create_new_vm(specs):
 
         # Power on the vm
         print("...and powering it on!")
-        new_vm.PowerOnVM_Task()
+        #new_vm.PowerOnVM_Task()
 
         #Respond with the vm summary
-        return print_short_detail_list(new_vm.summary)
+        return print_short_detail_list(new_vm)
     else:
         return "Could not create vm"
 

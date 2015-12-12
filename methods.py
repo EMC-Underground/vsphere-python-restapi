@@ -416,7 +416,7 @@ def create_new_vm(specs):
 
         # Power on the vm
         print("...and powering it on!")
-        #new_vm.PowerOnVM_Task()
+        new_vm.PowerOnVM_Task()
 
         #Respond with the vm summary
         return print_short_detail_list(new_vm)

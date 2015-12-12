@@ -3,7 +3,7 @@ import methods
 import json
 import os
 app = Flask(__name__)
-
+app.debug = True
 
 port = int(os.getenv('VCAP_APP_PORT', 8080))
 
@@ -40,10 +40,10 @@ def get_vm(uuid):
     else:
         return jsonify(methods.find_vm_by_uuid(uuid))
           
-@app.route('/vms/<uuid>/guestid/', methods=['GET'])
-def get_guestid(uuid):
+@app.route('/vms/<uuid>/<attr>/', methods=['GET'])
+def get_attr(uuid,attr):
     if request.method == 'GET':
-        return methods.get_vm_guestid(uuid)
+        return methods.get_vm_attribute(uuid,attr)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port)

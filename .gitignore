@@ -2,6 +2,7 @@ config.json
 env/
 pyvmomi-community-samples/
 methods.pyc
+
 *.pyc
 *.swp
 # Byte-compiled / optimized / DLL files
@@ -63,3 +64,5 @@ docs/_build/
 
 # PyBuilder
 target/
+
+.idea/

@@ -132,7 +132,7 @@ def print_triggered_alarms(entity=None):
     """
     alarms = entity.triggeredAlarmState
     for alarm in alarms:
-        print("#"*40)
+        print("#" * 40)
         # The alarm key looks like alarm-101.host-95
         print("alarm_moref: {0}".format(alarm.key.split('.')[0]))
         print("alarm status: {0}".format(alarm.overallStatus))

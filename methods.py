@@ -50,18 +50,27 @@ def debugger():
 
 
 def server_connection():
-    SI = None
     # Attempt to connect to the VCSA
+    import ssl
     try:
-        SI = connect.SmartConnect(host=host, user=user, pwd=pwd,)
-        print("Made the connection")
-        atexit.register(connect.Disconnect, SI)
-    except IOError:
-        pass
+        SI = connect.SmartConnect(host=host,
+                                    user=user,
+                                    pwd=pwd,
+                                    #sslContext=context
+                                  )
+    except requests.exceptions.SSLError as e:
+        print("Falling back to no verification for SSL")
 
-    if not SI:
-        print ("Unable to connect to host with supplied info.")
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        SI = connect.SmartConnect(host=host,
+                                    user=user,
+                                    pwd=pwd,
+                                    sslContext=context
+                              )
 
+    print("Made the connection")
+    atexit.register(connect.Disconnect, SI)
     return SI
 
 # Helper function to so the actually traversal and printing of the vms.

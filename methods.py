@@ -1,10 +1,10 @@
 # All imports used for the whole program
 
 import atexit
-import json
 import os
 import requests
 import ssl
+import sys
 
 from pyVim import connect
 from pyVmomi import vmodl
@@ -12,26 +12,30 @@ from pyVmomi import vim
 from tools import tasks
 
 # Pull in the config info used to create connections to the vshpere host
-with open('config.json') as data_file:
-    data = json.load(data_file)
+try:
+    host = os.environ['host']
+except KeyError:
+    print('ERROR: The $host env var hasn\'t been set. Please set it with "export host=<ip>" or "set host=<ip>", '
+        'depending on the OS')
+    sys.exit(1)
 
-host = data['host']
-user = data['username']
-pwd = data['password']
-resource_pool_name = None
-vm_folder_name = None
+try:
+    user = os.environ['username']
+except KeyError:
+    print('ERROR: The ${0} env var hasn\'t been set. Please set it with "export {0}=<{0}>" or '
+          '"set {0}=<{0}>", depending on the OS'.format('username'))
+    sys.exit(1)
+
+try:
+    user = os.environ['password']
+except KeyError:
+    print('ERROR: The ${0} env var hasn\'t been set. Please set it with "export {0}=<{0}>" or '
+          '"set {0}=<{0}>", depending on the OS'.format('password'))
+    sys.exit(1)
 
 # Get the resource pool name or use default
-if hasattr(data, 'resource_pool'):
-    resource_pool_name = data['resource_pool']
-else:
-    resource_pool_name = "api_vms"
-
-# Get the vm folder name or use the default
-if hasattr(data, 'vm_folder'):
-    vm_folder_name = data['vm_folder']
-else:
-    vm_folder_name = "api_vm_folder"
+resource_pool_name = os.getenv('resource_pool','api_vms')
+vm_folder_name = os.getenv('vm_folder', 'api_vm_folder')
 
 # This allows the API to work in corp environments
 requests.packages.urllib3.disable_warnings()

@@ -532,7 +532,7 @@ def get_vm_attribute(uuid, attr):
     return str(return_value)
 
 # Function to force a VM with specified UUID to PXE boot
-def force_pxe_boot(uuid, specs)
+def force_pxe_boot(uuid, specs):
     SI = server_connection()
 
     # Find the vm to change
@@ -544,7 +544,7 @@ def force_pxe_boot(uuid, specs)
 
     if 'guestid' in specs:
         # Change the guestid
-        task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(guestId=specs['guestid'])
+        task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(guestId=specs['guestid']))
         tasks.wait_for_tasks(SI, [task])
 
         # Determine the network being used
@@ -557,7 +557,7 @@ def force_pxe_boot(uuid, specs)
         netKey = None
         for device in VM.config.hardware.device:
             if hasattr(device.backing, 'deviceName'):
-                if device.backing.deviceName = netName:
+                if device.backing.deviceName == netName:
                     netKey = int(device.key)
                     break
 
@@ -566,15 +566,15 @@ def force_pxe_boot(uuid, specs)
             return "Couldn't find the network adapter."
 
         # Set vm to PXE boot
-        pxedevice = vim.vm.BootOptions.BootableEthernetDevice(deviceKey = netKey)
-        pxeboot = vim.vm.BootOptions(bootOrder = pxedevice)
-        task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(bootOptions = pxeboot)
-        tasks.wait_for_tasks(SI, [task])
-
-        # Force VM to reboot
         task = VM.PowerOffVM_Task()
         tasks.wait_for_tasks(SI, [task])
+        pxedevice = vim.vm.BootOptions.BootableEthernetDevice(deviceKey = netKey)
+        pxeboot = vim.vm.BootOptions(bootOrder = [pxedevice])
+        task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(bootOptions = pxeboot))
+        tasks.wait_for_tasks(SI, [task])
         VM.PowerOnVM_Task()
+
+	return "Your vm will now be PXEboot with a guestid of {0}".format(specs['guestid'])
 
     else:
         return "No guestid was specified in packet."

@@ -1,5 +1,0 @@
-{
-  "host":"<vSphere url or ip>",
-  "username":"<admin username>",
-  "password":"<password for account>"
-}

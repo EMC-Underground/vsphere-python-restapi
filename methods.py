@@ -179,16 +179,20 @@ def print_short_detail_list(vm):
 
 
 def find_vm_by_uuid(UUID):
+    vm = fetch_vm(UUID)
+    if vm is None:
+            return {"not_found": {"uuid": uuid}}
+    return print_short_detail_list(vm)
+# Fetch a VM by either UUID
+
+def fetch_vm(UUID):
     si = server_connection()
     search_index = si.content.searchIndex
     uuid = UUID.lower()
     vm = search_index.FindByUuid(None, uuid, True, True)
     if vm is None:
         vm = search_index.FindByUuid(None, uuid, True, False)
-        if vm is None:
-            return {"not_found": {"uuid": uuid}}
-    return print_short_detail_list(vm)
-
+    return vm
 # Delete a vm from the server based on the uuid
 
 
@@ -203,7 +207,7 @@ def delete_vm_from_server(uuid):
         return "Unable to grab search index"
 
     # Find the vm to delete
-    vm = search_index.FindByUuid(None, uuid, True, True)
+    vm = fetch_vm(uuid)
 
     # Verify we have a vm
     if vm is None:
@@ -230,11 +234,9 @@ def change_vm_stats(uuid, specs):
     SI = server_connection()
 
     # Find the vm to change
-    VM = SI.content.searchIndex.FindByUuid(None, uuid, True, True)
+    VM = fetch_vm(uuid)
     if VM is None:
-        VM = SI.content.searchIndex.FindByUuid(None, uuid, True, False)
-        if VM is None:
-            return "Couldn't find VM with UUID " + uuid
+        return "Couldn't find VM with UUID " + uuid
 
     if 'cpu' in specs:
         task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(numCPUs=int(specs['cpu'])))
@@ -532,15 +534,15 @@ def get_vm_attribute(uuid, attr):
     return str(return_value)
 
 # Function to force a VM with specified UUID to PXE boot
+
+
 def force_pxe_boot(uuid, specs):
     SI = server_connection()
 
     # Find the vm to change
-    VM = SI.content.searchIndex.FindByUuid(None, uuid, True, True)
+    VM = fetch_vm(uuid)
     if VM is None:
-        VM = SI.content.searchIndex.FindByUuid(None, uuid, True, False)
-        if VM is None:
-            return "Couldn't find VM with UUID " + uuid
+        return "Couldn't find VM with UUID " + uuid
 
     if 'guestid' in specs:
         # Change the guestid

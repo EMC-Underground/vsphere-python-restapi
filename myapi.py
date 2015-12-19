@@ -2,7 +2,9 @@ from flask import Flask, request, jsonify
 import methods
 import os
 app = Flask(__name__)
-app.debug = True
+
+# Uncomment if you need to debug the site
+# app.debug = True
 
 port = int(os.getenv('VCAP_APP_PORT', 8080))
 

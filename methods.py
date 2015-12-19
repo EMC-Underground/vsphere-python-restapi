@@ -27,7 +27,7 @@ except KeyError:
     sys.exit(1)
 
 try:
-    user = os.environ['password']
+    pwd = os.environ['password']
 except KeyError:
     print('ERROR: The ${0} env var hasn\'t been set. Please set it with "export {0}=<{0}>" or '
           '"set {0}=<{0}>", depending on the OS'.format('password'))

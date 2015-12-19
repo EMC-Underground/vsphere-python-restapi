@@ -36,6 +36,7 @@ except KeyError:
 # Get the resource pool name or use default
 resource_pool_name = os.getenv('resource_pool','api_vms')
 vm_folder_name = os.getenv('vm_folder', 'api_vm_folder')
+default_network_name = os.getenv('network', 'VM Network')
 
 # This allows the API to work in corp environments
 requests.packages.urllib3.disable_warnings()
@@ -249,7 +250,7 @@ def change_vm_stats(uuid, specs):
 # Helper function to add a netowrk connection to a vm
 
 
-def add_network(vm, si, content, netName="VM Network"):
+def add_network(vm, si, content, netName):
     spec = vim.vm.ConfigSpec()
     dev_changes = []
     network_spec = vim.vm.device.VirtualDeviceSpec()
@@ -459,7 +460,10 @@ def create_new_vm(specs):
 
         # Add a network to the vm
         print("...adding the network...")
-        add_network(vm=new_vm, si=SI, content=content)
+        if 'network' in specs:
+            add_network(new_vm, SI, content, specs['network'])
+        else:
+            add_network(new_vm, SI, content, default_network_name)
 
         # Power on the vm
         print("...and powering it on!")
@@ -526,3 +530,51 @@ def get_vm_attribute(uuid, attr):
             break
 
     return str(return_value)
+
+# Function to force a VM with specified UUID to PXE boot
+def force_pxe_boot(uuid, specs):
+    SI = server_connection()
+
+    # Find the vm to change
+    VM = SI.content.searchIndex.FindByUuid(None, uuid, True, True)
+    if VM is None:
+        VM = SI.content.searchIndex.FindByUuid(None, uuid, True, False)
+        if VM is None:
+            return "Couldn't find VM with UUID " + uuid
+
+    if 'guestid' in specs:
+        # Change the guestid
+        task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(guestId=specs['guestid']))
+        tasks.wait_for_tasks(SI, [task])
+
+        # Determine the network being used
+        if 'network' in specs:
+            netName = specs['network']
+        else:
+            netName = default_network_name
+
+        # Get the vm's network device's id
+        netKey = None
+        for device in VM.config.hardware.device:
+            if hasattr(device.backing, 'deviceName'):
+                if device.backing.deviceName == netName:
+                    netKey = int(device.key)
+                    break
+
+        # Verify the network was Found
+        if netKey is None:
+            return "Couldn't find the network adapter."
+
+        # Set vm to PXE boot
+        task = VM.PowerOffVM_Task()
+        tasks.wait_for_tasks(SI, [task])
+        pxedevice = vim.vm.BootOptions.BootableEthernetDevice(deviceKey = netKey)
+        pxeboot = vim.vm.BootOptions(bootOrder = [pxedevice])
+        task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(bootOptions = pxeboot))
+        tasks.wait_for_tasks(SI, [task])
+        VM.PowerOnVM_Task()
+
+	return "Your vm will now be PXEboot with a guestid of {0}".format(specs['guestid'])
+
+    else:
+        return "No guestid was specified in packet."

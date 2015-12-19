@@ -4,7 +4,7 @@ import os
 app = Flask(__name__)
 
 # Uncomment if you need to debug the site
-# app.debug = True
+app.debug = True
 
 port = int(os.getenv('VCAP_APP_PORT', 8080))
 
@@ -46,10 +46,13 @@ def get_vm(uuid):
         return jsonify(methods.find_vm_by_uuid(uuid))
 
 
-@app.route('/vms/<uuid>/<attr>/', methods=['GET'])
+@app.route('/vms/<uuid>/<attr>/', methods=['GET', 'PUT'])
 def get_attr(uuid, attr):
     if request.method == 'GET':
         return methods.get_vm_attribute(uuid, attr)
+    elif request.method == 'PUT' and attr.lower() == "pxeboot":
+            specs = request.get_json()
+            return methods.force_pxe_boot(uuid, specs)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port)

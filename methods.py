@@ -574,7 +574,8 @@ def force_pxe_boot(uuid, specs):
         pxeboot = vim.vm.BootOptions(bootOrder = [pxedevice])
         task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(bootOptions = pxeboot))
         tasks.wait_for_tasks(SI, [task])
-        VM.PowerOnVM_Task()
+        task = VM.PowerOnVM_Task()
+	tasks.wait_for_tasks(SI, [task])
 
 	return "Your vm will now be PXEboot with a guestid of {0}".format(specs['guestid'])
 

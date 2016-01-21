@@ -512,13 +512,6 @@ def get_vm_attribute(uuid, attr):
                     return_value = value2
                     break_var = True
 
-                elif key2 == "product":
-                    print("Searching in {0}".format(key2))
-                    for key3, value3 in value2.iteritems():
-                        if key3.lower() == attr.lower():
-                            return_value = value3
-                            break_var = True
-                            break
                 if break_var:
                     break
 

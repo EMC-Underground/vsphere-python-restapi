@@ -54,5 +54,10 @@ def get_attr(uuid, attr):
             specs = request.get_json()
             return methods.force_pxe_boot(uuid, specs)
 
+@app.route('/vms/<uuid>/<root_attr>/<attr>', methods=['GET'])
+def get_deep_attr(uuid, root_attr, attr):
+    if request.method == 'GET':
+        return methods.get_vm_attribute(uuid, attr, root_attr)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port)

@@ -479,7 +479,7 @@ def create_new_vm(specs):
 # Function to get a single attribute of a vm
 
 
-def get_vm_attribute(uuid, attr):
+def get_vm_attribute(uuid, attr, root_attr = None):
     print("Searching for {0} in {1}".format(attr, uuid))
     vmStats = find_vm_by_uuid(uuid)
     return_value = "null"
@@ -505,7 +505,7 @@ def get_vm_attribute(uuid, attr):
                     return_value = value2
                     break_var = True
 
-        elif key1 == "host":
+        elif key1 == "host" and root_attr == "host":
             print("Searching in {0}".format(key1))
             for key2, value2 in value1.iteritems():
                 if key2.lower() == attr.lower():

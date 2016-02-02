@@ -247,6 +247,19 @@ def change_vm_stats(uuid, specs):
             vim.vm.ConfigSpec(memoryMB=long(specs['mem'])))
         tasks.wait_for_tasks(SI, [task])
 
+    if 'vm_broker' in specs:
+        config = vim.vm.ConfigSpec()
+	opt = vim.option.OptionValue()
+	options_values = {}
+	options_values.update({"vm_broker": specs['vm_broker']})
+	for k, v in options_values.iteritems():
+            opt.key = k
+            opt.value = v
+            config.extraConfig.append(opt)
+            opt = vim.option.OptionValue()
+	task = VM.ReconfigVM_Task(config)
+	tasks.wait_for_tasks(SI, [task])
+
     return "I fixed it!"
 
 # Helper function to add a netowrk connection to a vm

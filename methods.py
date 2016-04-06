@@ -181,7 +181,7 @@ def print_short_detail_list(vm):
 def find_vm_by_uuid(UUID):
     vm = fetch_vm(UUID)
     if vm is None:
-            return {"not_found": {"uuid": uuid}}
+            return {"not_found": {"uuid": UUID}}
     return print_short_detail_list(vm)
 # Fetch a VM by either UUID
 

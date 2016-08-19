@@ -82,7 +82,7 @@ def server_connection():
 # Includes templates
 
 
-def print_vm_info(virtual_machine, depth=1, full_vm_list=None):
+def print_vm_info(virtual_machine, depth=1, full_vm_list=None, attr=None):
     """
     Print information for a particular virtual machine or recurse into a
     folder with depth protection
@@ -109,7 +109,12 @@ def print_vm_info(virtual_machine, depth=1, full_vm_list=None):
     if hasattr(summary.config, 'product'):
         del vars(summary.config)['product']
     if summary.config.template is False:
-        full_vm_list.append(vars(summary.config))
+      if attr is not None:
+        found = get_vm_attribute(summary.config.uuid, attr)
+        if found is None or found == 'null':
+          return
+
+      full_vm_list.append(vars(summary.config))
     return
 
 # Root function for get a full list of vms
@@ -493,97 +498,117 @@ def create_new_vm(specs):
 
 
 def get_vm_attribute(uuid, attr, root_attr = None):
-    print("Searching for {0} in {1}".format(attr, uuid))
-    vmStats = find_vm_by_uuid(uuid)
-    return_value = "null"
-    break_var = False
-    print("Entering Core attrs")
-    for key1, value1 in vmStats.iteritems():
-        print("key is {0}".format(key1))
-        if key1.lower() == attr.lower():
-            return_value = value1
-            break_var = True
+  print("Searching for {0} in {1}".format(attr, uuid))
+  vmStats = find_vm_by_uuid(uuid)
+  return_value = "null"
+  break_var = False
+  print("Entering Core attrs")
+  for key1, value1 in vmStats.iteritems():
+    print("key is {0}".format(key1))
+    if key1.lower() == attr.lower():
+      return_value = value1
+      break_var = True
 
-        if key1 == "extraConfig":
-            print("Searching in {0}".format(key1))
-            for key2, value2 in value1.iteritems():
-                if key2.lower() == attr.lower():
-                    return_value = value2
-                    break_var = True
+    if key1 == "extraConfig":
+      print("Searching in {0}".format(key1))
+      for key2, value2 in value1.iteritems():
+        if key2.lower() == attr.lower():
+          return_value = value2
+          break_var = True
 
-        if key1 == "guest":
-            print("Searching in {0}".format(key1))
-            for key2, value2 in value1.iteritems():
-                if key2.lower() == attr.lower():
-                    return_value = value2
-                    break_var = True
+    if key1 == "guest":
+      print("Searching in {0}".format(key1))
+      for key2, value2 in value1.iteritems():
+        if key2.lower() == attr.lower():
+          return_value = value2
+          break_var = True
 
-        elif key1 == "host" and root_attr == "host":
-            print("Searching in {0}".format(key1))
-            for key2, value2 in value1.iteritems():
-                if key2.lower() == attr.lower():
-                    return_value = value2
-                    break_var = True
+    elif key1 == "host" and root_attr == "host":
+      print("Searching in {0}".format(key1))
+      for key2, value2 in value1.iteritems():
+        if key2.lower() == attr.lower():
+          return_value = value2
+          break_var = True
 
-                if break_var:
-                    break
-
-        elif key1 == "storage":
-            print("Searching in {0}".format(key1))
-            for key2, value2 in value1.iteritems():
-                if key2.lower() == attr.lower():
-                    return_value = value2
-                    break_var = True
         if break_var:
-            break
+          break
 
-    return str(return_value)
+    elif key1 == "storage":
+      print("Searching in {0}".format(key1))
+      for key2, value2 in value1.iteritems():
+        if key2.lower() == attr.lower():
+          return_value = value2
+          break_var = True
+    if break_var:
+      break
+
+  return str(return_value)
 
 # Function to force a VM with specified UUID to PXE boot
-
-
 def force_pxe_boot(uuid, specs):
-    SI = server_connection()
+  SI = server_connection()
 
-    # Find the vm to change
-    VM = fetch_vm(uuid)
-    if VM is None:
-        return "Couldn't find VM with UUID " + uuid
+  # Find the vm to change
+  VM = fetch_vm(uuid)
+  if VM is None:
+    return "Couldn't find VM with UUID " + uuid
 
-    if 'guestid' in specs:
-        # Change the guestid
-        task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(guestId=specs['guestid']))
-        tasks.wait_for_tasks(SI, [task])
+  if 'guestid' in specs:
+    # Change the guestid
+    task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(guestId=specs['guestid']))
+    tasks.wait_for_tasks(SI, [task])
 
-        # Determine the network being used
-        if 'network' in specs:
-            netName = specs['network']
-        else:
-            netName = default_network_name
-
-        # Get the vm's network device's id
-        netKey = None
-        for device in VM.config.hardware.device:
-            if hasattr(device.backing, 'deviceName'):
-                if device.backing.deviceName == netName:
-                    netKey = int(device.key)
-                    break
-
-        # Verify the network was Found
-        if netKey is None:
-            return "Couldn't find the network adapter."
-
-        # Set vm to PXE boot
-        task = VM.PowerOffVM_Task()
-        tasks.wait_for_tasks(SI, [task])
-        pxedevice = vim.vm.BootOptions.BootableEthernetDevice(deviceKey = netKey)
-        pxeboot = vim.vm.BootOptions(bootOrder = [pxedevice])
-        task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(bootOptions = pxeboot))
-        tasks.wait_for_tasks(SI, [task])
-        task = VM.PowerOnVM_Task()
-	tasks.wait_for_tasks(SI, [task])
-
-	return "Your vm will now be PXEboot with a guestid of {0}".format(specs['guestid'])
-
+    # Determine the network being used
+    if 'network' in specs:
+        netName = specs['network']
     else:
-        return "No guestid was specified in packet."
+        netName = default_network_name
+
+    # Get the vm's network device's id
+    netKey = None
+    for device in VM.config.hardware.device:
+      if hasattr(device.backing, 'deviceName'):
+        if device.backing.deviceName == netName:
+          netKey = int(device.key)
+          break
+
+    # Verify the network was Found
+    if netKey is None:
+      return "Couldn't find the network adapter."
+
+    # Set vm to PXE boot
+    task = VM.PowerOffVM_Task()
+    tasks.wait_for_tasks(SI, [task])
+    pxedevice = vim.vm.BootOptions.BootableEthernetDevice(deviceKey = netKey)
+    pxeboot = vim.vm.BootOptions(bootOrder = [pxedevice])
+    task = VM.ReconfigVM_Task(vim.vm.ConfigSpec(bootOptions = pxeboot))
+    tasks.wait_for_tasks(SI, [task])
+    task = VM.PowerOnVM_Task()
+    tasks.wait_for_tasks(SI, [task])
+    return "Your vm will now be PXEboot with a guestid of {0}".format(specs['guestid'])
+
+  else:
+    return "No guestid was specified in packet."
+
+def search_for_vm_by_attr(attr):
+  try:
+    service_instance = server_connection()
+    if service_instance is None:
+      print ("Couldn't get the server instance")
+    full_vm_list = []
+    content = service_instance.RetrieveContent()
+    for child in content.rootFolder.childEntity:
+      if hasattr(child, 'vmFolder'):
+        datacenter = child
+        vmFolder = datacenter.vmFolder
+        vmList = vmFolder.childEntity
+        for vm in vmList:
+          print_vm_info(vm, 1, full_vm_list, attr)
+
+    return full_vm_list
+
+  except vmodl.MethodFault as error:
+    print ("Caught vmodl fault : {0}".format(error.msg))
+    return -1
+
+  return 0

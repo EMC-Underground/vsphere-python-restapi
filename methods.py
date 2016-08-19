@@ -510,7 +510,7 @@ def find_attribute_for_vm(vm, attr, searchValue):
       for key, value in vm.config.extraConfig:
         if key.lower() == attr.lower():
           if value.lower() == searchValue:
-          return True
+            return True
       print("Failed to find")
       return None
   except KeyError as error:

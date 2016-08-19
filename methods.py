@@ -503,10 +503,10 @@ def create_new_vm(specs):
 
 def find_attribute_for_vm(vm, attr, searchValue):
   try:
-    if vars(vm.config)[attr] == searchValue:
-      print("Searched and found!")
-      return True
-    else:
+    #if vars(vm.config)[attr] == searchValue:
+    #  print("Searched and found!")
+    #  return True
+    #else:
       print("Checking the extra config")
       for key, value in vm.config.extraConfig:
         if key.lower() == attr.lower():
@@ -514,8 +514,8 @@ def find_attribute_for_vm(vm, attr, searchValue):
             return True
       print("Failed to find")
       return None
-  except:
-    print("Failed to search vm...")
+  except Exception as e:
+    print("Failed to search vm...{0}".format(e))
     return None
 
 def find_attribute_for_ME(vm, attr, root_attr = None):

@@ -502,9 +502,21 @@ def create_new_vm(specs):
         return "Could not create vm"
 
 def find_attribute_for_vm(vm, attr, searchValue):
-  find_attribute_for_ME(vm.config, attr, None, searchValue)
-  
-def find_attribute_for_ME(vm, attr, root_attr = None, searchValue=None):
+  try:
+    if vm.config[attr] == searchValue:
+      print("Searched and found!")
+      return True
+    else:
+      for key, value in vm.config.extraConfig:
+        if key.lower() == attr.lower():
+          if value.lower() == searchValue:
+          return True
+      print("Failed to find")
+      return None
+  except KeyError as error:
+    return None
+
+def find_attribute_for_ME(vm, attr, root_attr = None):
   vmStats = vm
   return_value = "null"
   break_var = False
@@ -542,15 +554,6 @@ def find_attribute_for_ME(vm, attr, root_attr = None, searchValue=None):
     if break_var:
       break
 
-  if searchValue is not None:
-    if str(return_value) == searchValue:
-      print("Searched and found!")
-      return True
-    else:
-      print("Failed to find")
-      return None
-  else:
-    print("Didn't search, returning plain text")
     return str(return_value)
 
 # Function to get a single attribute of a vm

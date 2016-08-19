@@ -514,7 +514,8 @@ def find_attribute_for_vm(vm, attr, searchValue):
             return True
       print("Failed to find")
       return None
-  except KeyError as error:
+  except:
+    print("Failed to search vm...")
     return None
 
 def find_attribute_for_ME(vm, attr, root_attr = None):
@@ -625,7 +626,10 @@ def search_for_vm_by_attr(attr, searchValue):
         for vm in vmList:
           print_vm_info(vm, 1, full_vm_list, attr, searchValue)
 
-    return full_vm_list
+    if not full_vm_list:
+      return "null"
+    else:
+      return full_vm_list
 
   except vmodl.MethodFault as error:
     print ("Caught vmodl fault : {0}".format(error.msg))

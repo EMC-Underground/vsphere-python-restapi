@@ -116,7 +116,7 @@ def print_vm_info(virtual_machine, depth=1, full_vm_list=None, attr=None, search
         del vars(summary.config)['product']
     if summary.config.template is False:
       if attr is not None:
-        print("Going into search...")
+        print("Going into search to find {0} under {1}".format(searchValue, attr))
         found = get_vm_attribute(summary.config.uuid, attr, searchValue = searchValue)
         if found is None or found == 'null':
           return

@@ -120,7 +120,7 @@ def print_vm_info(virtual_machine, depth=1, full_vm_list=None, attr=None, search
         found = find_attribute_for_vm(virtual_machine, attr, searchValue)
         if found is None or found == 'null':
           return
-
+      print("Going up")
       full_vm_list.append(vars(summary.config))
     return
 
@@ -508,10 +508,12 @@ def find_attribute_for_vm(vm, attr, searchValue):
     #  return True
     #else:
       print("Checking the extra config")
-      for key, value in vm.config.extraConfig:
-        if key.lower() == attr.lower():
-          if value.lower() == searchValue:
-            return True
+    #  if vm.config.extraConfig['{0}'].format(attr).lower() == searchValue:
+    #    return True
+      for option in vm.config.extraConfig:
+        if option.key.lower() == attr.lower():
+	  if option.value.lower() == searchValue.lower():
+	    return True
       print("Failed to find")
       return None
   except Exception as e:
@@ -629,6 +631,7 @@ def search_for_vm_by_attr(attr, searchValue):
     if not full_vm_list:
       return "null"
     else:
+      print("sending the list")
       return full_vm_list
 
   except vmodl.MethodFault as error:

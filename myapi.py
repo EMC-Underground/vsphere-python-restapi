@@ -18,21 +18,21 @@ port = int(os.getenv('VCAP_APP_PORT', 8080))
 
 @app.route('/')
 def index():
-    return 'Welcome to the VMware REST API!'
+  return 'Welcome to the VMware REST API!'
 
 
 @app.route('/debug')
 def debug():
-    return methods.debugger()
+  return methods.debugger()
 
 
 @app.route('/vms/', methods=['GET', 'POST'])
 def get_vms():
-    if request.method == 'POST':
-        specs = request.get_json()
-        return jsonify(vm=methods.create_new_vm(specs))
-    else:
-        return jsonify(vm=methods.get_all_vm_info())
+  if request.method == 'POST':
+    specs = request.get_json()
+    return jsonify(vm=methods.create_new_vm(specs))
+  else:
+    return jsonify(vm=methods.get_all_vm_info())
 
 @app.route('/vms/<attr>/', methods=['GET'])
 def search_for_vm(attr):
@@ -40,27 +40,27 @@ def search_for_vm(attr):
 
 @app.route('/vms/<uuid>/', methods=['GET', 'PUT', 'DELETE'])
 def get_vm(uuid):
-    if request.method == 'DELETE':
-        return methods.delete_vm_from_server(uuid)
-    elif request.method == 'PUT':
-        specs = request.get_json()
-        return methods.change_vm_stats(uuid, specs)
-    else:
-        return jsonify(methods.find_vm_by_uuid(uuid))
+  if request.method == 'DELETE':
+    return methods.delete_vm_from_server(uuid)
+  elif request.method == 'PUT':
+    specs = request.get_json()
+    return methods.change_vm_stats(uuid, specs)
+  else:
+    return jsonify(methods.find_vm_by_uuid(uuid))
 
 
 @app.route('/vms/<uuid>/<attr>/', methods=['GET', 'PUT'])
 def get_attr(uuid, attr):
-    if request.method == 'GET':
-        return methods.get_vm_attribute(uuid, attr)
-    elif request.method == 'PUT' and attr.lower() == "pxeboot":
-            specs = request.get_json()
-            return methods.force_pxe_boot(uuid, specs)
+  if request.method == 'GET':
+    return methods.get_vm_attribute(uuid, attr)
+  elif request.method == 'PUT' and attr.lower() == "pxeboot":
+    specs = request.get_json()
+    return methods.force_pxe_boot(uuid, specs)
 
 @app.route('/vms/<uuid>/<root_attr>/<attr>', methods=['GET'])
 def get_deep_attr(uuid, root_attr, attr):
-    if request.method == 'GET':
-        return methods.get_vm_attribute(uuid, attr, root_attr)
+  if request.method == 'GET':
+    return methods.get_vm_attribute(uuid, attr, root_attr)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=port)
+  app.run(host='0.0.0.0', port=port)

@@ -34,6 +34,9 @@ def get_vms():
     else:
         return jsonify(vm=methods.get_all_vm_info())
 
+@app.route('/vms/<attr>/', methods=['GET'])
+def search_for_vm(attr):
+  return methods.search_for_vm_by_attr(attr)
 
 @app.route('/vms/<uuid>/', methods=['GET', 'PUT', 'DELETE'])
 def get_vm(uuid):

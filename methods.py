@@ -95,14 +95,20 @@ def print_vm_info(virtual_machine, depth=1, full_vm_list=None, attr=None, search
             return
         vmList = virtual_machine.childEntity
         for c in vmList:
-            print_vm_info(c, depth + 1, full_vm_list)
+	  if attr is not None:
+            print_vm_info(c, depth + 1, full_vm_list, attr, searchValue)
+	  else:
+	    print_vm_info(c, depth + 1, full_vm_list)
         return
     if hasattr(virtual_machine, 'vAppConfig'):
         if depth > maxdepth:
             return
         vmList = virtual_machine.childLink
         for c in vmList:
-            print_vm_info(c, depth + 1, full_vm_list)
+	  if attr is not None:
+            print_vm_info(c, depth + 1, full_vm_list, attr, searchValue)
+	  else:
+	    print_vm_info(c, depth + 1, full_vm_list)
         return
 
     summary = virtual_machine.summary
@@ -110,6 +116,7 @@ def print_vm_info(virtual_machine, depth=1, full_vm_list=None, attr=None, search
         del vars(summary.config)['product']
     if summary.config.template is False:
       if attr is not None:
+        print("Going into search...")
         found = get_vm_attribute(summary.config.uuid, attr, searchValue = searchValue)
         if found is None or found == 'null':
           return
@@ -498,33 +505,27 @@ def create_new_vm(specs):
 
 
 def get_vm_attribute(uuid, attr, root_attr = None, searchValue=None):
-  print("Searching for {0} in {1}".format(attr, uuid))
   vmStats = find_vm_by_uuid(uuid)
   return_value = "null"
   break_var = False
-  print("Entering Core attrs")
   for key1, value1 in vmStats.iteritems():
-    print("key is {0}".format(key1))
     if key1.lower() == attr.lower():
       return_value = value1
       break_var = True
 
     if key1 == "extraConfig":
-      print("Searching in {0}".format(key1))
       for key2, value2 in value1.iteritems():
         if key2.lower() == attr.lower():
           return_value = value2
           break_var = True
 
     if key1 == "guest":
-      print("Searching in {0}".format(key1))
       for key2, value2 in value1.iteritems():
         if key2.lower() == attr.lower():
           return_value = value2
           break_var = True
 
     elif key1 == "host" and root_attr == "host":
-      print("Searching in {0}".format(key1))
       for key2, value2 in value1.iteritems():
         if key2.lower() == attr.lower():
           return_value = value2
@@ -534,7 +535,6 @@ def get_vm_attribute(uuid, attr, root_attr = None, searchValue=None):
           break
 
     elif key1 == "storage":
-      print("Searching in {0}".format(key1))
       for key2, value2 in value1.iteritems():
         if key2.lower() == attr.lower():
           return_value = value2
@@ -544,10 +544,13 @@ def get_vm_attribute(uuid, attr, root_attr = None, searchValue=None):
 
   if searchValue is not None:
     if str(return_value) == searchValue:
+      print("Searched and found!")
       return True
     else:
+      print("Failed to find")
       return None
   else:
+    print("Didn't search, returning plain text")
     return str(return_value)
 
 # Function to force a VM with specified UUID to PXE boot

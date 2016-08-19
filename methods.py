@@ -114,10 +114,10 @@ def print_vm_info(virtual_machine, depth=1, full_vm_list=None, attr=None, search
     summary = virtual_machine.summary
     if hasattr(summary.config, 'product'):
         del vars(summary.config)['product']
-    if summary.config.template is False:
+    if summary.config.template is False and summary.config.uuid is not None:
       if attr is not None:
-        print("Going into search to find {0} under {1}".format(searchValue, attr))
-        found = get_vm_attribute(summary.config.uuid, attr, searchValue = searchValue)
+        print("Searching {2} ({3}) to find {0} under {1}".format(searchValue, attr, summary.config.instanceUuid, summary.config.name))
+        found = get_vm_attribute(summary.config.instanceUuid, attr, searchValue = searchValue)
         if found is None or found == 'null':
           return
 

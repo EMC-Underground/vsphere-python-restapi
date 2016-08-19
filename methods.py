@@ -117,7 +117,7 @@ def print_vm_info(virtual_machine, depth=1, full_vm_list=None, attr=None, search
     if summary.config.template is False and summary.config.uuid is not None:
       if attr is not None:
         print("Searching {2} ({3}) to find {0} under {1}".format(searchValue, attr, summary.config.instanceUuid, summary.config.name))
-        found = find_attribute(virtual_machine, attr, None, searchValue)
+        found = find_attribute_for_vm(virtual_machine, attr, searchValue)
         if found is None or found == 'null':
           return
 
@@ -501,7 +501,10 @@ def create_new_vm(specs):
     else:
         return "Could not create vm"
 
-def find_attribute(vm, attr, root_attr = None, searchValue=None):
+def find_attribute_for_vm(vm, attr, searchValue):
+  find_attribute_for_ME(vm.config, attr, None, searchValue)
+  
+def find_attribute_for_ME(vm, attr, root_attr = None, searchValue=None):
   vmStats = vm
   return_value = "null"
   break_var = False
@@ -553,9 +556,9 @@ def find_attribute(vm, attr, root_attr = None, searchValue=None):
 # Function to get a single attribute of a vm
 def get_vm_attribute(uuid, attr, root_attr = None):
   if root_attr is not None:
-    return find_attribute(find_vm_by_uuid(uuid), attr, root_attr)
+    return find_attribute_for_ME(find_vm_by_uuid(uuid), attr, root_attr)
   else:
-    return find_attribute(find_vm_by_uuid(uuid), attr)
+    return find_attribute_for_ME(find_vm_by_uuid(uuid), attr)
 
 # Function to force a VM with specified UUID to PXE boot
 def force_pxe_boot(uuid, specs):

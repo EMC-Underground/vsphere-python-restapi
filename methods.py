@@ -82,7 +82,7 @@ def server_connection():
 # Includes templates
 
 
-def print_vm_info(virtual_machine, depth=1, full_vm_list=None, attr=None):
+def print_vm_info(virtual_machine, depth=1, full_vm_list=None, attr=None, searchValue=None):
     """
     Print information for a particular virtual machine or recurse into a
     folder with depth protection
@@ -110,7 +110,7 @@ def print_vm_info(virtual_machine, depth=1, full_vm_list=None, attr=None):
         del vars(summary.config)['product']
     if summary.config.template is False:
       if attr is not None:
-        found = get_vm_attribute(summary.config.uuid, attr)
+        found = get_vm_attribute(summary.config.uuid, attr, searchValue = searchValue)
         if found is None or found == 'null':
           return
 
@@ -497,7 +497,7 @@ def create_new_vm(specs):
 # Function to get a single attribute of a vm
 
 
-def get_vm_attribute(uuid, attr, root_attr = None):
+def get_vm_attribute(uuid, attr, root_attr = None, searchValue=None):
   print("Searching for {0} in {1}".format(attr, uuid))
   vmStats = find_vm_by_uuid(uuid)
   return_value = "null"
@@ -542,7 +542,13 @@ def get_vm_attribute(uuid, attr, root_attr = None):
     if break_var:
       break
 
-  return str(return_value)
+  if searchValue is not None:
+    if str(return_value) == searchValue:
+      return True
+    else:
+      return None
+  else:
+    return str(return_value)
 
 # Function to force a VM with specified UUID to PXE boot
 def force_pxe_boot(uuid, specs):
@@ -590,7 +596,7 @@ def force_pxe_boot(uuid, specs):
   else:
     return "No guestid was specified in packet."
 
-def search_for_vm_by_attr(attr):
+def search_for_vm_by_attr(attr, searchValue):
   try:
     service_instance = server_connection()
     if service_instance is None:
@@ -603,7 +609,7 @@ def search_for_vm_by_attr(attr):
         vmFolder = datacenter.vmFolder
         vmList = vmFolder.childEntity
         for vm in vmList:
-          print_vm_info(vm, 1, full_vm_list, attr)
+          print_vm_info(vm, 1, full_vm_list, attr, searchValue)
 
     return full_vm_list
 

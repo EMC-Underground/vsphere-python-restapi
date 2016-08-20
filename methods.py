@@ -121,7 +121,7 @@ def print_vm_info(virtual_machine, depth=1, full_vm_list=None, attr=None, search
         if found is None or found == 'null':
           return
 	else:
-	  full_vm_list.append({"name":summary.config.name})
+	  full_vm_list.append({"name":summary.config.name,"UUID":summary.config.uuid})
 	  return
       print("Going up")
       full_vm_list.append(vars(summary.config))

@@ -566,6 +566,7 @@ def find_attribute_for_ME(vm, attr, root_attr = None):
 # Function to get a single attribute of a vm
 def get_vm_attribute(uuid, attr, root_attr = None):
   if root_attr is not None:
+    print("Searching with a root_attr")
     return find_attribute_for_ME(find_vm_by_uuid(uuid), attr, root_attr)
   else:
     return find_attribute_for_ME(find_vm_by_uuid(uuid), attr)
